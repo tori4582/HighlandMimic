@@ -15,7 +15,7 @@ class CoffeehouseCrawlerApplicationTests {
 
     @Test
     void getContentFromUrl() {
-        log.info(JSoupWebCrawler.fetchBodyHtmlContentFromUrl("https://thecoffeehouse.com/collections/all").toString());
+//        log.info(JSoupWebCrawler.fetchBodyHtmlContentFromUrl("https://thecoffeehouse.com/collections/all").toString());
     }
 
 }

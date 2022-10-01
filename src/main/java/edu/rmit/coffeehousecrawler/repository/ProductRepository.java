@@ -3,11 +3,11 @@ package edu.rmit.coffeehousecrawler.repository;
 import edu.rmit.coffeehousecrawler.common.JSoupWebCrawler;
 import edu.rmit.coffeehousecrawler.model.Product;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Repository;
 
-import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +43,35 @@ public class ProductRepository {
                 });
     }
 
+    public Product toProduct(Element productElement) {
+
+        String productUrl = BASE_URL + productElement.select(SELECTOR_REF_LINK).attr("href");
+
+        Document productPage = JSoupWebCrawler.fetchHtml(productUrl);
+
+        Element productPageBody = productPage.body();
+        Element productPageHead = productPage.head();
+
+//        log.info("Fetched product html page: \n" + productElement.html());
+
+        return Product.builder()
+                .name(extractTitleFromProductHead(productPageHead))
+                .productUrl(productUrl)
+                .price(this.extractPriceFromProductHead(productPageHead))
+                .currency(this.extractCurrencyFromProductHead(productPageHead))
+                .collectionName(
+                        this.extractCollectionFromBreadcrumb(productPageBody.select("ol.breadcrumb").first())
+                )
+                .imageUrl(extractImageUrlFromProductHead(productPageHead))
+                .description(this.extractDescriptionFromProductBody(productPageBody))
+                .build();
+
+    }
+
+    private String extractCurrencyFromProductHead(Element headElement) {
+        return JSoupWebCrawler.extractMetadata(headElement, "og:price:currency");
+    }
+
     private List<Element> extractCollections(Element bodyElement) {
         return new ArrayList<>(bodyElement.select(SELECTOR_COLLECTION));
     }
@@ -51,35 +80,10 @@ public class ProductRepository {
         return new ArrayList<>(collectionElement.select(SELECTOR_PRODUCT));
     }
 
-    public Product toProduct(Element productElement) {
 
-        String productUrl = BASE_URL + productElement.select(SELECTOR_REF_LINK).attr("href");
+    private String extractTitleFromProductHead(Element headElement) {
 
-        Element productPageBody = JSoupWebCrawler.fetchBodyHtmlContentFromUrl(productUrl);
-
-//        log.info("Fetched product html page: \n" + productElement.html());
-
-        return Product.builder()
-                .name(extractTitleFromProductBody(productPageBody))
-                .productUrl(productUrl)
-                .price(this.extractPriceFromProductBody(productPageBody))
-                .collectionName(
-                        this.extractCollectionFromBreadcrumb(productPageBody.select("ol.breadcrumb").first())
-                )
-                .imageUrl(extractImageUrlsFromProductBody(productPageBody))
-                .description(this.extractDescriptionFromProductBody(productPageBody))
-                .build();
-
-    }
-
-    private String extractTitleFromProductBody(Element productPageBody) {
-
-        final String recognition = "const ahu = ";
-
-        int location = productPageBody.html().indexOf(recognition) + recognition.length();
-        int termination = productPageBody.html().indexOf("var id_product", location);
-        log.warn(productPageBody.html().substring(location, termination));
-        return "";
+        return JSoupWebCrawler.extractMetadata(headElement, "og:title");
     }
 
     private String extractCollectionFromBreadcrumb(Element breadcrumbElement) {
@@ -90,22 +94,21 @@ public class ProductRepository {
                 ).orElse("");
     }
 
-    private Long extractPriceFromProductBody(Element pageBodyElement) {
+    private Long extractPriceFromProductHead(Element headElement) {
 
-        String priceNumber = pageBodyElement.select("div.price_product_item")
-                .text()
-                .split(" ")[0]
-                .replace(".", "");
+        String priceNumber =  Optional.ofNullable(
+                        headElement.select("meta[property=og:price:amount]").first()
+                )
+                .map(e -> e.attr("content"))
+                .map(s -> s.split(" ")[0].replace(".", ""))
+                .orElse("");
 
         return (priceNumber.length() == 0) ? 0L : Long.parseLong(priceNumber);
     }
 
-    private String[] extractImageUrlsFromProductBody(Element pageBodyElement) {
+    private String extractImageUrlFromProductHead(Element headElement) {
 
-        log.info("Page body of extract image: " + pageBodyElement.html());
-
-        return new String[] {pageBodyElement.select("img")
-                .first().attr("data-src") };
+        return JSoupWebCrawler.extractMetadata(headElement, "og:image");
     }
 
     private String extractDescriptionFromProductBody(Element productPageBody) {
@@ -115,7 +118,7 @@ public class ProductRepository {
                     .get(0)
                     .select("p")
         ).map(Elements::text)
-        .reduce("", (acc, p) -> acc + "\n\n" + p);
+        .reduce("", (acc, p) -> acc + p);
     }
 
 }
