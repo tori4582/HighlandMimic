@@ -7,6 +7,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
+import java.io.File;
 import java.util.Optional;
 
 @Slf4j
@@ -36,14 +37,19 @@ public class JSoupWebCrawler {
     }
 
     @SneakyThrows
-    private static Connection.Response fetchRequestAsChromeClient(String url) {
-        log.info("Establishing connection to URL: " + url);
-        return Jsoup.connect(url)
-                    .userAgent("Chrome")
-                    .timeout(10000)
-                    .method(Connection.Method.GET)
-                    .followRedirects(true)
-                    .execute();
+    public static Document readHtmlFromResourceFile(File file) {
+        return Jsoup.parse(file);
+    }
+
+    @SneakyThrows
+    private static Document fetchRequestAsChromeClient(String url) {
+//        return Jsoup.connect(url)
+//                    .userAgent("Chrome")
+//                    .timeout(10000)
+//                    .method(Connection.Method.GET)
+//                    .followRedirects(true)
+//                    .execute();
+        return Jsoup.connect(url).get();
     }
 
 
