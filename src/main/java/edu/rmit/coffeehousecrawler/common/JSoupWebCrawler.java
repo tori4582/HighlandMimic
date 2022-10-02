@@ -24,7 +24,8 @@ public class JSoupWebCrawler {
     }
 
     public static Document fetchHtml(String url) {
-        return Jsoup.parse(fetchRequestAsChromeClient(url).body());
+        log.info("Establishing connection to URL: " + url);
+        return fetchRequestAsChromeClient(url);
     }
 
     @SneakyThrows
