@@ -7,6 +7,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
+import java.io.File;
+
 @Slf4j
 public class JSoupWebCrawler {
 
@@ -15,6 +17,11 @@ public class JSoupWebCrawler {
         return Jsoup.parse(fetchRequestAsChromeClient(url).body().html())
                 .getElementsByTag("body")
                 .first();
+    }
+
+    @SneakyThrows
+    public static Document readHtmlFromResourceFile(File file) {
+        return Jsoup.parse(file);
     }
 
     @SneakyThrows
