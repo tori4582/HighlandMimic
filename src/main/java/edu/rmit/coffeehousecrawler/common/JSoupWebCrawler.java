@@ -8,15 +8,32 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.io.File;
+import java.util.Optional;
 
 @Slf4j
 public class JSoupWebCrawler {
 
     @SneakyThrows
     public static Element fetchBodyHtmlContentFromUrl(String url) {
-        return Jsoup.parse(fetchRequestAsChromeClient(url).body().html())
-                .getElementsByTag("body")
-                .first();
+        return fetchHtml(url).body();
+    }
+
+    @SneakyThrows
+    public static Element fetchHeadHtmlContentFromUrl(String url) {
+        return fetchHtml(url).head();
+    }
+
+    public static Document fetchHtml(String url) {
+        return Jsoup.parse(fetchRequestAsChromeClient(url).body());
+    }
+
+    @SneakyThrows
+    public static String extractMetadata(Element headElement, String property) {
+        return Optional.ofNullable(
+                        headElement.select("meta[property=" + property + "]").first()
+                )
+                .map(e -> e.attr("content"))
+                .orElse("");
     }
 
     @SneakyThrows

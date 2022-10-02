@@ -13,9 +13,10 @@ public class Product {
     private String name;
     private String productUrl;
     private Long price;
-    private String[] imageUrl;
+    private String currency;
+    private String imageUrl;
     private String collectionName;
     private String description;
-    private Map<String, Long> upsizeOptions;
-    private Map<String, Long> toppingOptions;
+//    private Map<String, Long> upsizeOptions;
+//    private Map<String, Long> toppingOptions;
 }
