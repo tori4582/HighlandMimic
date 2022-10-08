@@ -27,6 +27,7 @@ public class PostRepository {
                     .collectionName(pageBody.getElementsByTag("h1").first().text())
                     .uploadedDuration(extractUploadedTime(e))
                     .shortenedContent(extractShortenedContent(e))
+                    .articleContent(extractArticleContent(extractRefUrl(e)))
                     .build();
         }).toList();
     }
@@ -75,4 +76,9 @@ public class PostRepository {
         return Integer.parseInt(pageButtons.get(pageButtons.size() - 2).text()) + 1;
     }
 
+    private String extractArticleContent(String refUrl) {
+        return JSoupWebCrawler.fetchBodyHtmlContentFromUrl("http://thecoffeehouse.com" + refUrl)
+                .select("div.article_content")
+                .html();
+    }
 }

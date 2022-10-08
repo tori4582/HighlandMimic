@@ -13,4 +13,5 @@ public class Post {
     private String collectionName;
     private String uploadedDuration;
     private String shortenedContent;
+    private String articleContent;
 }

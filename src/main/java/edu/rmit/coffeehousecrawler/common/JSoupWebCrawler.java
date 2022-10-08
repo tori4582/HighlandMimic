@@ -1,5 +1,8 @@
 package edu.rmit.coffeehousecrawler.common;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
@@ -11,6 +14,7 @@ import java.io.File;
 import java.util.Optional;
 
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JSoupWebCrawler {
 
     @SneakyThrows
