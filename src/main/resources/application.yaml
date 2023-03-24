@@ -1,0 +1,22 @@
+spring:
+  web:
+    resources:
+      static-locations: classpath:/META-INF/resources/,classpath:/resources/,classpath:/static/
+
+  output:
+    ansi:
+      enabled: ALWAYS
+
+
+  data:
+    mongodb:
+      uri: mongodb+srv://admin:admin@mongo-aufgabe-dev.671lr.mongodb.net/highland-mimic?retryWrites=true&w=majority
+      database: highland-mimic
+
+
+
+infrastructure:
+  firebase:
+    authFileLocation: hehe
+
+
