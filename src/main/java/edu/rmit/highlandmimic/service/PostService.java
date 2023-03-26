@@ -4,8 +4,10 @@ import edu.rmit.highlandmimic.model.Post;
 import edu.rmit.highlandmimic.model.request.PostRequestEntity;
 import edu.rmit.highlandmimic.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
 import static java.util.Optional.ofNullable;
@@ -27,13 +29,17 @@ public class PostService {
     }
 
     public List<Post> searchPostsByName(String nameQuery) {
-        return postRepository.getPostsByTitleContains(nameQuery);
+        return postRepository.getPostsByTitleContainsIgnoreCase(nameQuery);
     }
 
     // WRITE operations
 
     public Post createNewPost(PostRequestEntity reqEntity) {
         Post preparedPost = Post.builder()
+                .title(reqEntity.getTitle())
+                .content(reqEntity.getContent())
+                .imageUrl(reqEntity.getImageUrl())
+                .collectionId(reqEntity.getCollectionId())
                 .build();
 
         return postRepository.save(preparedPost);
@@ -45,26 +51,26 @@ public class PostService {
 
         Post preparedPost = ofNullable(this.getPostById(id))
                 .map(loadedEntity -> {
-                    Post PostObj = Post.builder()
-                            .build();
+                    loadedEntity.setTitle(reqEntity.getTitle());
+                    loadedEntity.setContent(reqEntity.getContent());
+                    loadedEntity.setImageUrl(reqEntity.getImageUrl());
+                    loadedEntity.setCollectionId(reqEntity.getCollectionId());
 
-
-                    return PostObj;
+                    return loadedEntity;
                 }).orElseThrow();
 
-//        return PostRepository.update(preparedPost);
-        return null;
+        return postRepository.save(preparedPost);
     }
 
+    @SneakyThrows
     public Post updateFieldValueOfExistingPost(String id, String fieldName, Object newValue) {
-        Post preparedPost =  ofNullable(this.getPostById(id))
-                .map(loadedEntity -> {
+        Post preparedPost =  ofNullable(this.getPostById(id)).orElseThrow();
 
-                    return Post.builder().build();
-                }).orElseThrow();
+        Field preparedField = preparedPost.getClass().getDeclaredField(fieldName);
+        preparedField.setAccessible(true);
+        preparedField.set(preparedPost, newValue);
 
-//        return PostRepository.update(preparedPost);
-        return null;
+        return postRepository.save(preparedPost);
     }
 
     // DELETE operations

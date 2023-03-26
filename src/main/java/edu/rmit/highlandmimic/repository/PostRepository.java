@@ -9,6 +9,6 @@ import java.util.List;
 @Repository
 public interface PostRepository extends MongoRepository<Post, String> {
 
-    List<Post> getPostsByTitleContains(String nameQuery);
+    List<Post> getPostsByTitleContainsIgnoreCase(String nameQuery);
 
 }

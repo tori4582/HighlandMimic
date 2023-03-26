@@ -6,7 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @Document("tags")
 public class Tag {
 
@@ -15,5 +15,11 @@ public class Tag {
 
     private String tagName;
     private String tagDescription;
+
+    @Builder.ObtainVia(method = "generateRandomColorCode")
     private String tagColorCode;
+
+    public static String generateRandomColorCode() {
+        return String.format("#%06X", (int) (Math.random() * 0xFFFFFF));
+    }
 }

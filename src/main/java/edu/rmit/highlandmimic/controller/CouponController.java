@@ -1,22 +1,23 @@
 package edu.rmit.highlandmimic.controller;
 
 import edu.rmit.highlandmimic.model.Coupon;
+import edu.rmit.highlandmimic.model.User;
 import edu.rmit.highlandmimic.model.request.CouponRequestEntity;
 import edu.rmit.highlandmimic.service.CouponService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static edu.rmit.highlandmimic.common.ControllerUtils.controllerWrapper;
-
 @RestController
-@RequestMapping("/Coupon")
+@RequestMapping("/coupon")
 @RequiredArgsConstructor
 public class CouponController {
 
     private final CouponService couponService;
+    private final SecurityHandler securityHandler;
 
     // READ operations
 
@@ -38,34 +39,59 @@ public class CouponController {
     // WRITE operation
 
     @PostMapping
-    public ResponseEntity<?> createNewCoupon(@RequestBody CouponRequestEntity reqEntity) {
-        return controllerWrapper(() -> couponService.createNewCoupon(reqEntity));
+
+    public ResponseEntity<?> createNewCoupon(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                             @RequestBody CouponRequestEntity reqEntity) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> couponService.createNewCoupon(reqEntity),
+                SecurityHandler.ALLOW_AUTHORITIES
+        );
     }
 
     // MODIFY operation
 
     @PostMapping("/{id}")
-    public ResponseEntity<?> updateExistingCoupon(@PathVariable String id, @RequestBody CouponRequestEntity reqEntity) {
-        return controllerWrapper(() -> couponService.updateExistingCoupon(id, reqEntity));
+    public ResponseEntity<?> updateExistingCoupon(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                  @PathVariable String id, @RequestBody CouponRequestEntity reqEntity) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> couponService.updateExistingCoupon(id, reqEntity),
+                SecurityHandler.ALLOW_AUTHORITIES
+        );
     }
 
-    @PostMapping("/E/{id}/{fieldName}")
-    public ResponseEntity<?> updateFieldValueOfExistingCoupon(@PathVariable String id,
-                                                          @PathVariable String fieldName,
-                                                          @RequestBody Object newValue) {
-        return controllerWrapper(() -> couponService.updateFieldValueOfExistingCoupon(id, fieldName, newValue));
+    @PostMapping("/{id}/{fieldName}")
+    public ResponseEntity<?> updateFieldValueOfExistingCoupon(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                              @PathVariable String id,
+                                                              @PathVariable String fieldName,
+                                                              @RequestBody Object newValue) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> couponService.updateFieldValueOfExistingCoupon(id, fieldName, newValue),
+                SecurityHandler.ALLOW_AUTHORITIES
+        );
     }
 
     // DELETE operation
 
     @DeleteMapping()
-    public ResponseEntity<Long> removeAllCoupons() {
-        return ResponseEntity.ok(couponService.removeAllCoupons());
+    public ResponseEntity<?> removeAllCoupons(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                couponService::removeAllCoupons,
+                List.of(User.UserRole.ADMIN)
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> removeCouponById(@PathVariable String id) {
-        return controllerWrapper(() -> couponService.removeCouponById(id));
+    public ResponseEntity<?> removeCouponById(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                              @PathVariable String id) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> couponService.removeCouponById(id),
+                List.of(User.UserRole.ADMIN)
+        );
     }
 
 }

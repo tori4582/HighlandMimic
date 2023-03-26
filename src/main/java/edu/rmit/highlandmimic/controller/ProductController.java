@@ -1,9 +1,11 @@
 package edu.rmit.highlandmimic.controller;
 
 import edu.rmit.highlandmimic.model.Product;
+import edu.rmit.highlandmimic.model.User;
 import edu.rmit.highlandmimic.model.request.ProductRequestEntity;
 import edu.rmit.highlandmimic.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,11 +14,12 @@ import java.util.List;
 import static edu.rmit.highlandmimic.common.ControllerUtils.controllerWrapper;
 
 @RestController
-@RequestMapping("/Product")
+@RequestMapping("/product")
 @RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
+    private final SecurityHandler securityHandler;
 
     // READ operations
 
@@ -38,34 +41,81 @@ public class ProductController {
     // WRITE operation
 
     @PostMapping
-    public ResponseEntity<?> createNewProduct(@RequestBody ProductRequestEntity reqEntity) {
-        return controllerWrapper(() -> productService.createNewProduct(reqEntity));
+    public ResponseEntity<?> createNewProduct(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                              @RequestBody ProductRequestEntity reqEntity) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> productService.createNewProduct(reqEntity),
+                List.of(User.UserRole.ADMIN)
+        );
     }
 
     // MODIFY operation
 
     @PostMapping("/{id}")
-    public ResponseEntity<?> updateExistingProduct(@PathVariable String id, @RequestBody ProductRequestEntity reqEntity) {
-        return controllerWrapper(() -> productService.updateExistingProduct(id, reqEntity));
+    public ResponseEntity<?> updateExistingProduct(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                   @PathVariable String id,
+                                                   @RequestBody ProductRequestEntity reqEntity) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> productService.updateExistingProduct(id, reqEntity),
+                List.of(User.UserRole.ADMIN)
+        );
     }
 
-    @PostMapping("/E/{id}/{fieldName}")
-    public ResponseEntity<?> updateFieldValueOfExistingProduct(@PathVariable String id,
-                                                          @PathVariable String fieldName,
-                                                          @RequestBody Object newValue) {
-        return controllerWrapper(() -> productService.updateFieldValueOfExistingProduct(id, fieldName, newValue));
+    @PostMapping("/{id}/{fieldName}")
+    public ResponseEntity<?> updateFieldValueOfExistingProduct(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                               @PathVariable String id,
+                                                               @PathVariable String fieldName,
+                                                               @RequestBody Object newValue) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> productService.updateFieldValueOfExistingProduct(id, fieldName, newValue),
+                List.of(User.UserRole.ADMIN)
+        );
+    }
+
+    @PostMapping("/{id}/topping-options")
+    public ResponseEntity<?> updateToppingOptions(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                  @PathVariable String id,
+                                                  @RequestBody List<String> toppingIds) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> productService.updateToppingOptions(id, toppingIds),
+                List.of(User.UserRole.ADMIN)
+        );
+    }
+
+    @PostMapping("/{id}/tags")
+    public ResponseEntity<?> updateProductTags(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                               @PathVariable String id,
+                                               @RequestBody List<String> tagIds) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> productService.updateProductTags(id, tagIds),
+                List.of(User.UserRole.ADMIN)
+        );
     }
 
     // DELETE operation
 
     @DeleteMapping()
-    public ResponseEntity<Long> removeAllProducts() {
-        return ResponseEntity.ok(productService.removeAllProducts());
+    public ResponseEntity<?> removeAllProducts(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                productService::removeAllProducts,
+                List.of(User.UserRole.ADMIN)
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> removeProductById(@PathVariable String id) {
-        return controllerWrapper(() -> productService.removeProductById(id));
+    public ResponseEntity<?> removeProductById(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                               @PathVariable String id) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> productService.removeProductById(id),
+                List.of(User.UserRole.ADMIN)
+        );
     }
 
 }

@@ -3,6 +3,7 @@ package edu.rmit.highlandmimic.model;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -16,10 +17,10 @@ public class ProductCatalogue {
     @Id
     private String productCatalogueId;
 
-    private String name;
+    private String productCatalogueName;
     private String description;
     private String imageUrl;
 
-    private List<String> subProductIds;
-    private List<String> subCatalogueIds;
+    @DBRef
+    private List<ProductCatalogue> subCatalogues;
 }

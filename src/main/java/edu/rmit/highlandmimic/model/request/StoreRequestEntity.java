@@ -20,4 +20,5 @@ public class StoreRequestEntity {
     private String longitude;
 
     private String imageUrl;
+    private String hotlineNumber;
 }

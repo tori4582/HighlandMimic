@@ -1,10 +1,12 @@
 package edu.rmit.highlandmimic.controller;
 
 import edu.rmit.highlandmimic.model.Post;
+import edu.rmit.highlandmimic.model.User;
 import edu.rmit.highlandmimic.model.request.PostRequestEntity;
 import edu.rmit.highlandmimic.service.PostService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +21,7 @@ import static edu.rmit.highlandmimic.common.ControllerUtils.controllerWrapper;
 public class PostController {
 
     private final PostService postService;
+    private final SecurityHandler securityHandler;
 
     @GetMapping
     public ResponseEntity<List<Post>> getAllPosts() {
@@ -38,34 +41,60 @@ public class PostController {
     // WRITE operation
 
     @PostMapping
-    public ResponseEntity<?> createNewPost(@RequestBody PostRequestEntity reqEntity) {
-        return controllerWrapper(() -> postService.createNewPost(reqEntity));
+    public ResponseEntity<?> createNewPost(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                           @RequestBody PostRequestEntity reqEntity) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> postService.createNewPost(reqEntity),
+                SecurityHandler.ALLOW_AUTHORITIES
+        );
     }
 
     // MODIFY operation
 
     @PostMapping("/{id}")
-    public ResponseEntity<?> updateExistingPost(@PathVariable String id, @RequestBody PostRequestEntity reqEntity) {
-        return controllerWrapper(() -> postService.updateExistingPost(id, reqEntity));
+    public ResponseEntity<?> updateExistingPost(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                @PathVariable String id,
+                                                @RequestBody PostRequestEntity reqEntity) {
+
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> postService.updateExistingPost(id, reqEntity),
+                SecurityHandler.ALLOW_AUTHORITIES
+        );
     }
 
-    @PostMapping("/E/{id}/{field}")
-    public ResponseEntity<?> updateFieldValueOfExistingPost(@PathVariable String id,
-                                                          @PathVariable String fieldName,
-                                                          @RequestBody Object newValue) {
-        return controllerWrapper(() -> postService.updateFieldValueOfExistingPost(id, fieldName, newValue));
+    @PostMapping("/{id}/{fieldName}")
+    public ResponseEntity<?> updateFieldValueOfExistingPost(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                            @PathVariable String id,
+                                                            @PathVariable String fieldName,
+                                                            @RequestBody Object newValue) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> postService.updateFieldValueOfExistingPost(id, fieldName, newValue),
+                SecurityHandler.ALLOW_AUTHORITIES
+        );
     }
 
     // DELETE operation
 
     @DeleteMapping()
-    public ResponseEntity<Long> removeAllPosts() {
-        return ResponseEntity.ok(postService.removeAllPosts());
+    public ResponseEntity<?> removeAllPosts(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                postService::removeAllPosts,
+                List.of(User.UserRole.ADMIN)
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> removePostById(@PathVariable String id) {
-        return controllerWrapper(() -> postService.removePostById(id));
+    public ResponseEntity<?> removePostById(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                            @PathVariable String id) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> postService.removePostById(id),
+                SecurityHandler.ALLOW_AUTHORITIES
+        );
     }
 
 }

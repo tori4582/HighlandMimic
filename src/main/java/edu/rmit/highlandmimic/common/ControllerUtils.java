@@ -4,13 +4,23 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.http.ResponseEntity;
 
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 import static edu.rmit.highlandmimic.common.ExceptionLogger.logInvalidAction;
+import static java.util.Optional.ofNullable;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ControllerUtils {
+
+    private static final Map<Class<?>, ?> exceptionalResponseMappings = Map.of(
+            NoSuchElementException.class, ResponseEntity.notFound(),
+            NullPointerException.class, ResponseEntity.notFound(),
+            IllegalArgumentException.class, ResponseEntity.badRequest(),
+            NoSuchFieldException.class, ResponseEntity.badRequest()
+    );
+
     public static ResponseEntity<?> controllerWrapper(Supplier<?> controllerExecution) {
         try {
             return ResponseEntity.ok(controllerExecution.get());
@@ -21,13 +31,10 @@ public class ControllerUtils {
     }
 
     private static ResponseEntity<?> switchExceptionsResponse(Exception e) {
-        if (e instanceof NoSuchElementException) {
-            return ResponseEntity.notFound().build();
-        }
-        if (e instanceof IllegalArgumentException) {
-            return ResponseEntity.badRequest().build();
-        }
 
-        return ResponseEntity.internalServerError().body(ExceptionLogger.ResponseException.fromExceptionObject(e));
+        return (exceptionalResponseMappings.containsKey(e.getClass()))
+                ? ((ResponseEntity.BodyBuilder) exceptionalResponseMappings.get(e.getClass())).body(e.getMessage())
+                : ResponseEntity.internalServerError().body(ExceptionLogger.ResponseException.fromExceptionObject(e));
+
     }
 }

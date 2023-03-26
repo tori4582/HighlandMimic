@@ -4,8 +4,10 @@ import edu.rmit.highlandmimic.model.Store;
 import edu.rmit.highlandmimic.model.request.StoreRequestEntity;
 import edu.rmit.highlandmimic.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,8 +28,7 @@ public class StoreService {
     }
 
     public Store getStoreById(String id) {
-        return storeRepository.findById(id)
-                .orElse(null);
+        return storeRepository.findById(id).orElse(null);
     }
 
     public List<Store> searchStoresByName(String nameQuery) {
@@ -41,6 +42,10 @@ public class StoreService {
                 .address2(reqEntity.getAddress2())
                 .address3(reqEntity.getAddress3())
                 .address4(reqEntity.getAddress4())
+                .latitude(reqEntity.getLatitude())
+                .longitude(reqEntity.getLongitude())
+                .imageUrl(reqEntity.getImageUrl())
+                .hotlineNumber(reqEntity.getHotlineNumber())
                 .build();
 
         return storeRepository.save(preparedStore);
@@ -52,23 +57,31 @@ public class StoreService {
 
         Store preparedStore = ofNullable(this.getStoreById(id))
                 .map(loadedEntity -> {
-                    Store storeObj = Store.builder()
-                            .build();
-
-                    return storeObj;
+                    loadedEntity.setStoreName(reqEntity.getName());
+                    loadedEntity.setAddress1(reqEntity.getAddress1());
+                    loadedEntity.setAddress2(reqEntity.getAddress2());
+                    loadedEntity.setAddress3(reqEntity.getAddress3());
+                    loadedEntity.setAddress4(reqEntity.getAddress4());
+                    loadedEntity.setLatitude(reqEntity.getLatitude());
+                    loadedEntity.setLongitude(reqEntity.getLongitude());
+                    loadedEntity.setImageUrl(reqEntity.getImageUrl());
+                    loadedEntity.setHotlineNumber(reqEntity.getHotlineNumber());
+                    
+                    return loadedEntity;
                 }).orElseThrow();
 
         return storeRepository.save(preparedStore);
     }
 
+    @SneakyThrows
     public Store updateFieldValueOfExistingStore(String id, String fieldName, Object newValue) {
-        ofNullable(this.getStoreById(id))
-                .map(loadedEntity -> {
+        Store preparedStore =  ofNullable(this.getStoreById(id)).orElseThrow();
 
-                    return null;
-                }).orElseThrow();
+        Field preparedField = preparedStore.getClass().getDeclaredField(fieldName);
+        preparedField.setAccessible(true);
+        preparedField.set(preparedStore, newValue);
 
-        return null;
+        return storeRepository.save(preparedStore);
     }
 
     // DELETE operations

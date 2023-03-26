@@ -1,13 +1,17 @@
 package edu.rmit.highlandmimic.service;
 
 import edu.rmit.highlandmimic.model.ProductCatalogue;
-import edu.rmit.highlandmimic.model.request.CouponRequestEntity;
+import edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers;
+import edu.rmit.highlandmimic.model.request.ProductCatalogueRequestEntity;
 import edu.rmit.highlandmimic.repository.ProductCatalogueRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
+import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToCatalogues;
 import static java.util.Optional.ofNullable;
 
 @Service
@@ -27,13 +31,19 @@ public class ProductCatalogueService {
     }
 
     public List<ProductCatalogue> searchProductCataloguesByName(String nameQuery) {
-        return productCatalogueRepository.getProductCataloguesByNameContains(nameQuery);
+        return productCatalogueRepository.getProductCataloguesByProductCatalogueNameContainsIgnoreCase(nameQuery);
     }
 
     // WRITE operations
 
-    public ProductCatalogue createNewProductCatalogue(CouponRequestEntity.ProductCatalogueRequestEntity reqEntity) {
+    public ProductCatalogue createNewProductCatalogue(ProductCatalogueRequestEntity reqEntity) {
         ProductCatalogue preparedProductCatalogue = ProductCatalogue.builder()
+                .productCatalogueName(reqEntity.getName())
+                .description(reqEntity.getDescription())
+                .imageUrl(reqEntity.getImageUrl())
+                .subCatalogues(
+                        convertListOfIdsToCatalogues(this.getAllProductCatalogues(), reqEntity.getSubCatalogueIds())
+                )
                 .build();
 
         return productCatalogueRepository.save(preparedProductCatalogue);
@@ -41,34 +51,49 @@ public class ProductCatalogueService {
 
     // MODIFY operations
 
-    public ProductCatalogue updateExistingProductCatalogue(String id, CouponRequestEntity.ProductCatalogueRequestEntity reqEntity) {
+    public ProductCatalogue updateExistingProductCatalogue(String id, ProductCatalogueRequestEntity reqEntity) {
 
         ProductCatalogue preparedProductCatalogue = ofNullable(this.getProductCatalogueById(id))
                 .map(loadedEntity -> {
-                    ProductCatalogue ProductCatalogueObj = ProductCatalogue.builder()
-                            .build();
+                    loadedEntity.setProductCatalogueName(reqEntity.getName());
+                    loadedEntity.setDescription(reqEntity.getDescription());
+                    loadedEntity.setImageUrl(reqEntity.getImageUrl());
+                    loadedEntity.setSubCatalogues(
+                            convertListOfIdsToCatalogues(this.getAllProductCatalogues(), reqEntity.getSubCatalogueIds())
+                    );
 
-
-                    return ProductCatalogueObj;
+                    return loadedEntity;
                 }).orElseThrow();
 
-//        return productCatalogueRepository.update(preparedProductCatalogue);
-        return null;
+        return productCatalogueRepository.save(preparedProductCatalogue);
     }
 
+    @SneakyThrows
     public ProductCatalogue updateFieldValueOfExistingProductCatalogue(String id, String fieldName, Object newValue) {
-        ProductCatalogue preparedProductCatalogue =  ofNullable(this.getProductCatalogueById(id))
-                .map(loadedEntity -> {
-                    ProductCatalogue ProductCatalogueObj = ProductCatalogue.builder()
-                            .build();
 
+        if (fieldName.equalsIgnoreCase("subcatalogues")) {
+            throw new UnsupportedOperationException("In order to update 'subCatalogues' field, use the '/{id}/sub-catalogues' endpoint instead.");
+        }
 
-                    return ProductCatalogueObj;
+        ProductCatalogue preparedProductCatalogue =  ofNullable(this.getProductCatalogueById(id)).orElseThrow();
 
+        Field preparedField = preparedProductCatalogue.getClass().getDeclaredField(fieldName);
+        preparedField.setAccessible(true);
+        preparedField.set(preparedProductCatalogue, newValue);
+
+        return productCatalogueRepository.save(preparedProductCatalogue);
+    }
+
+    public ProductCatalogue updateSubCatalogues(String id, List<String> subCatalogues) {
+        return productCatalogueRepository.findById(id)
+              .map(loadedEntity -> {
+                    loadedEntity.setSubCatalogues(
+                            convertListOfIdsToCatalogues(this.getAllProductCatalogues(), subCatalogues)
+                    );
+
+                    productCatalogueRepository.save(loadedEntity);
+                    return loadedEntity;
                 }).orElseThrow();
-
-//        return productCatalogueRepository.update(preparedProductCatalogue);
-        return null;
     }
 
     // DELETE operations
@@ -86,5 +111,4 @@ public class ProductCatalogueService {
         productCatalogueRepository.deleteAll();
         return quantity;
     }
-
 }

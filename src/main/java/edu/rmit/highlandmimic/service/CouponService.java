@@ -1,11 +1,14 @@
 package edu.rmit.highlandmimic.service;
 
 import edu.rmit.highlandmimic.model.Coupon;
+import edu.rmit.highlandmimic.model.ProductCatalogue;
 import edu.rmit.highlandmimic.model.request.CouponRequestEntity;
 import edu.rmit.highlandmimic.repository.CouponRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
 import static java.util.Optional.ofNullable;
@@ -27,13 +30,18 @@ public class CouponService {
     }
 
     public List<Coupon> searchCouponsByName(String nameQuery) {
-        return couponRepository.getCouponsByCouponNameContains(nameQuery);
+        return couponRepository.getCouponsByCouponNameContainsIgnoreCase(nameQuery);
     }
 
     // WRITE operations
 
     public Coupon createNewCoupon(CouponRequestEntity reqEntity) {
         Coupon preparedCoupon = Coupon.builder()
+                .couponName(reqEntity.getName())
+                .couponCode(reqEntity.getCode())
+                .content(reqEntity.getContent())
+                .imageUrl(reqEntity.getImageUrl())
+                .dueDate(reqEntity.getDueDate())
                 .build();
 
         return couponRepository.save(preparedCoupon);
@@ -45,25 +53,28 @@ public class CouponService {
 
         Coupon preparedCoupon = ofNullable(this.getCouponById(id))
                 .map(loadedEntity -> {
-                    Coupon CouponObj = Coupon.builder()
-                            .build();
+                    loadedEntity.setCouponName(reqEntity.getName());
+                    loadedEntity.setCouponCode(reqEntity.getCode());
+                    loadedEntity.setContent(reqEntity.getContent());
+                    loadedEntity.setImageUrl(reqEntity.getImageUrl());
+                    loadedEntity.setDueDate(reqEntity.getDueDate());
 
-
-                    return CouponObj;
+                    return loadedEntity;
                 }).orElseThrow();
 
-//        return couponRepository.update(preparedCoupon);
-        return null;
+        return couponRepository.save(preparedCoupon);
     }
 
+    @SneakyThrows
     public Coupon updateFieldValueOfExistingCoupon(String id, String fieldName, Object newValue) {
-        Coupon preparedCoupon =  ofNullable(this.getCouponById(id))
-                .map(loadedEntity -> {
-                    return Coupon.builder().build();
-                }).orElseThrow();
 
-//        return couponRepository.update(preparedCoupon);
-        return null;
+        Coupon preparedCoupon =  ofNullable(this.getCouponById(id)).orElseThrow();
+
+        Field preparedField = preparedCoupon.getClass().getDeclaredField(fieldName);
+        preparedField.setAccessible(true);
+        preparedField.set(preparedCoupon, newValue);
+
+        return couponRepository.save(preparedCoupon);
     }
 
     // DELETE operations

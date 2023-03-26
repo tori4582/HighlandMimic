@@ -3,13 +3,15 @@ package edu.rmit.highlandmimic.model;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
-import org.jsoup.nodes.Element;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
 @Builder
+@Document("products")
 public class Product {
 
     @Id
@@ -18,11 +20,13 @@ public class Product {
     @NonNull
     private String productName;
 
-    private String productUrl;
     private Long price;
-    private String currency;
+
+    @Builder.Default
+    private String currency = "đ";
     private String imageUrl;
     private String description;
     private Map<String, Long> upsizeOptions;
-    private Map<String, Long> toppingOptions;
+    private List<Topping> toppingOptions;
+    private List<Tag> tags;
 }

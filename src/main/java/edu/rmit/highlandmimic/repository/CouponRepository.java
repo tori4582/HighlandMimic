@@ -9,6 +9,6 @@ import java.util.List;
 @Repository
 public interface CouponRepository extends MongoRepository<Coupon, String> {
 
-    List<Coupon> getCouponsByCouponNameContains(String nameQuery);
+    List<Coupon> getCouponsByCouponNameContainsIgnoreCase(String nameQuery);
 
 }

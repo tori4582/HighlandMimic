@@ -9,6 +9,6 @@ import java.util.List;
 @Repository
 public interface ProductRepository extends MongoRepository<Product, String> {
 
-    List<Product> getProductsByProductNameContains(String nameQuery);
+    List<Product> getProductsByProductNameContainsIgnoreCase(String nameQuery);
 
 }
