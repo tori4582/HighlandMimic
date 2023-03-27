@@ -5,17 +5,13 @@ import edu.rmit.highlandmimic.model.request.AuthenticationRequestEntity;
 import edu.rmit.highlandmimic.model.request.UserRequestEntity;
 import edu.rmit.highlandmimic.model.response.AuthenticationResponseEntity;
 import edu.rmit.highlandmimic.service.UserService;
-import io.jsonwebtoken.impl.DefaultClaims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
+import javax.websocket.server.PathParam;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Supplier;
 
 import static edu.rmit.highlandmimic.common.ControllerUtils.controllerWrapper;
 
@@ -28,6 +24,12 @@ public class UserController {
     private final SecurityHandler securityHandler;
 
     // READ operations
+
+    @GetMapping("/issue-rspwmail")
+    public ResponseEntity<?> resetPassword(@RequestParam String email,
+                                           @RequestParam String forward) {
+        return controllerWrapper(() -> userService.issueResetPasswordMail(email, forward));
+    }
 
     @GetMapping
     public ResponseEntity<?> getAllUsers(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken) {
@@ -93,6 +95,23 @@ public class UserController {
                 () -> userService.updateFieldValueOfExistingUser(identity, fieldName, newValue),
                 SecurityHandler.ALLOW_AUTHORITIES
         );
+    }
+
+    @PostMapping("/{identity}/role")
+    public ResponseEntity<?> changeRoleOfExistingUser(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                      @PathVariable String identity,
+                                                      @RequestBody String newRole) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> userService.changeRoleOfExistingUser(identity, newRole),
+                List.of(User.UserRole.ADMIN)
+        );
+    }
+
+    @PostMapping("/reset-pass")
+    public ResponseEntity<?> resetNewPasswordForExistingUser(@RequestParam String resetCredentials,
+                                                             @RequestBody String newHashedPassword) {
+        return controllerWrapper(() -> userService.resetNewPasswordForExistingUser(resetCredentials, newHashedPassword));
     }
 
     // DELETE operation

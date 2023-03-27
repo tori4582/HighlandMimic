@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
 import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToCoupons;
 import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToProducts;
 
@@ -45,12 +46,12 @@ public class OrderService {
     public Order createNewOrder(OrderRequestEntity reqEntity) {
         Order preparedOrder = Order.builder()
                 .userId(reqEntity.getUserId())
-                .orderItems(convertMapOfProductIdsToMapOfProducts(
-                        this.productService.getAllProducts(), reqEntity.getOrderItems()))
-                .selectedPaymentMethod(reqEntity.getPaymentMethod())
-                .selectedPickupOption(reqEntity.getPickupOptions())
+                .orderItems(reqEntity.getOrderItems())
+                .selectedPaymentMethod((Order.PaymentMethod) getOrDefault(reqEntity.getPaymentMethod(), Order.PaymentMethod.CASH))
+                .selectedPickupOption((Order.PickupOption) getOrDefault(reqEntity.getPickupOptions(), Order.PickupOption.AT_STORE))
                 .appliedCoupons(convertListOfIdsToCoupons(couponService.getAllCoupons(), reqEntity.getCouponIds()))
                 .selectedPickupStore(storeService.getStoreById(reqEntity.getStoreId()))
+                .orderStatus(Order.OrderStatus.PENDING)
                 .address1(reqEntity.getAddress1())
                 .address2(reqEntity.getAddress2())
                 .address3(reqEntity.getAddress3())
@@ -113,7 +114,7 @@ public class OrderService {
         return this.changeStateOfOrder(
             id,
             Order.OrderStatus.PLACED,
-            order -> order.getOrderStatus().equals(Order.OrderStatus.PLACED),
+            order -> !order.getOrderStatus().equals(Order.OrderStatus.PLACED),
             () -> new IllegalStateException("Cannot place an order which is already in 'PLACED' state")
         );
     }
@@ -124,8 +125,7 @@ public class OrderService {
         Order preparedOrder = Optional.of(loadedOrder)
                 .filter(order -> order.getOrderStatus().equals(Order.OrderStatus.PENDING))
                 .map(loadedEntity -> {
-                    loadedEntity.setOrderItems(convertMapOfProductIdsToMapOfProducts(
-                            this.productService.getAllProducts(), reqEntity.getOrderItems()));
+                    loadedEntity.setOrderItems(reqEntity.getOrderItems());
                     loadedEntity.setAppliedCoupons(convertListOfIdsToCoupons(couponService.getAllCoupons(), reqEntity.getCouponIds()));
                     loadedEntity.setSelectedPickupStore(storeService.getStoreById(reqEntity.getStoreId()));
                     loadedEntity.setSelectedPaymentMethod(reqEntity.getPaymentMethod());

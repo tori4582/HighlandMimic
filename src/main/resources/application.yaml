@@ -16,7 +16,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: hungtran6360
-    password: mockPassword
+    password: dbfhganbyebyzwcy
     properties:
       mail:
         smtp:
@@ -34,10 +34,5 @@ spring:
       uri: mongodb+srv://admin:admin@mongo-aufgabe-dev.671lr.mongodb.net/highland-mimic?retryWrites=true&w=majority
       database: highland-mimic
 
-
-
-infrastructure:
-  firebase:
-    authFileLocation: hehe
-
-
+server:
+  endpoint: http://localhost:8080

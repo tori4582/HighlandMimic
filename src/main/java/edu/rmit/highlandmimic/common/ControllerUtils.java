@@ -30,6 +30,16 @@ public class ControllerUtils {
         }
     }
 
+    public static ResponseEntity<?> controllerWrapper(Runnable controllerExecution) {
+        try {
+            controllerExecution.run();
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            logInvalidAction(e);
+            return switchExceptionsResponse(e);
+        }
+    }
+
     private static ResponseEntity<?> switchExceptionsResponse(Exception e) {
 
         return (exceptionalResponseMappings.containsKey(e.getClass()))

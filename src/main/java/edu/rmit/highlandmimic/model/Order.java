@@ -31,7 +31,7 @@ public class Order {
     @Builder.Default
     private OrderStatus status = OrderStatus.PENDING;
 
-    private Map<Product, Integer> orderItems;
+    private Map<String, Integer> orderItems;
 
     @Builder.Default
     private PaymentMethod selectedPaymentMethod = PaymentMethod.CASH;

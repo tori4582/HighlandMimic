@@ -1,15 +1,17 @@
 package edu.rmit.highlandmimic.service;
 
 import edu.rmit.highlandmimic.common.JwtUtils;
-import edu.rmit.highlandmimic.model.Product;
 import edu.rmit.highlandmimic.model.User;
 import edu.rmit.highlandmimic.model.request.AuthenticationRequestEntity;
 import edu.rmit.highlandmimic.model.request.UserRequestEntity;
 import edu.rmit.highlandmimic.repository.UserRepository;
-import jakarta.mail.MessagingException;
+import javax.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.springframework.mail.javamail.JavaMailSender;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
@@ -18,27 +20,27 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
-import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToTags;
-import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToToppings;
 import static java.util.Optional.ofNullable;
 
+@Slf4j
 @Service
-@RequiredArgsConstructor
 public class UserService {
-//    private final JavaMailSender mailSender;
 
     private final UserRepository userRepository;
-//    private final MailService mailService;
-    private final ResetPasswordCredentialsService resetPasswordCredentialsService;
+    private final MailService mailService;
+    private final SimpleInternalCredentialService simpleInternalCredentialService;
 
-//    public void issueResetPassword(User receiver) throws MessagingException {
-//        String credential = this.resetPasswordCredentialsService.createResetCredentials(receiver.getUsername());
-//        String resetLink = "http://localhost:8080/aufweb/reset-pass.html?resetCredential=" + credential;
-//        mailService.issueResetPassword(receiver, resetLink);
-//    }
+    private final String resetPasswordEndpoint;
 
-    public String acceptResetCredential(String credential) {
-        return this.resetPasswordCredentialsService.acceptResetCredential(credential);
+    public UserService(@Value("${server.endpoint}") String resetPasswordEndpoint,
+                       @Autowired UserRepository userRepository,
+                       @Autowired MailService mailService,
+                       @Autowired SimpleInternalCredentialService simpleInternalCredentialService
+                       ) {
+        this.userRepository = userRepository;
+        this.mailService = mailService;
+        this.simpleInternalCredentialService = simpleInternalCredentialService;
+        this.resetPasswordEndpoint = resetPasswordEndpoint;
     }
 
 
@@ -138,12 +140,60 @@ public class UserService {
 
     @SneakyThrows
     public User updateFieldValueOfExistingUser(String identity, String fieldName, Object newValue) {
-        User preparedUser =  ofNullable(this.searchUserByIdentity(identity)).orElseThrow();
+
+        final List<String> unmodifiableFields = List.of("userId", "userRole", "accountProvider");
+        if (!unmodifiableFields.contains(fieldName)) {
+            throw new IllegalAccessException("Invalid action, unable to update unmodifiable field");
+        }
+
+        User preparedUser = Optional.ofNullable(this.searchUserByIdentity(identity)).orElseThrow();
 
         Field preparedField = preparedUser.getClass().getDeclaredField(fieldName);
         preparedField.setAccessible(true);
+
+        log.info("Performs updating field value: "
+                + identity + "::" + "User$"
+                + preparedField.getName() + "::" + preparedField.getType().getSimpleName()
+                + " : " + preparedField.get(preparedUser)
+                + " => " + newValue
+        );
+
         preparedField.set(preparedUser, newValue);
 
         return userRepository.save(preparedUser);
+    }
+
+    @SneakyThrows
+    public void issueResetPasswordMail(String emailAddress, String forwardResetClientUrl) {
+        User receiver = Optional.ofNullable(userRepository.findByEmailIgnoreCase(emailAddress))
+                .orElseThrow(() -> {throw new NullPointerException("Invalid email address: " + emailAddress);});
+
+        String credential = this.simpleInternalCredentialService.issueAndPersistResetCredentials(receiver.getUsername());
+
+        if (forwardResetClientUrl.contains("?")) {
+            forwardResetClientUrl += forwardResetClientUrl.contains("?") ? "&" : "?";
+        }
+
+        String resetPasswordPath =  forwardResetClientUrl
+                + (forwardResetClientUrl.contains("?") ? "&" : "?")
+                + "resetCredential=" + credential;
+        mailService.issueResetPassword(receiver, resetPasswordPath);
+    }
+
+    public Object resetNewPasswordForExistingUser(String resetCredential, String newHashedPassword) {
+        String userEmail = simpleInternalCredentialService.acceptResetCredential(resetCredential);
+        User preparedUser = userRepository.findByEmailIgnoreCase(userEmail);
+
+        preparedUser.setHashedPassword(newHashedPassword);
+
+        return userRepository.save(preparedUser);
+    }
+
+    public User changeRoleOfExistingUser(String identity, String newRole) {
+        User preparedUser = Optional.ofNullable(this.searchUserByIdentity(identity)).orElseThrow();
+
+        preparedUser.setUserRole();
+
+        return userRepository.save(preparedUser);gio
     }
 }
