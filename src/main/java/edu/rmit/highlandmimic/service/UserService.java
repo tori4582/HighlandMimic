@@ -192,8 +192,8 @@ public class UserService {
     public User changeRoleOfExistingUser(String identity, String newRole) {
         User preparedUser = Optional.ofNullable(this.searchUserByIdentity(identity)).orElseThrow();
 
-        preparedUser.setUserRole();
+        preparedUser.setUserRole(User.UserRole.valueOf(newRole));
 
-        return userRepository.save(preparedUser);gio
+        return userRepository.save(preparedUser);
     }
 }
