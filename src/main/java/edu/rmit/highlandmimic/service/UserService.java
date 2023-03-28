@@ -15,9 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
 import static java.util.Optional.ofNullable;
@@ -73,9 +71,10 @@ public class UserService {
     public Object createNewUser(UserRequestEntity reqEntity) {
         // check if there is already an existing user in database
         // require that the user need to register with email firstly via SELF_PROVIDED method
-        if (Objects.nonNull(userRepository.findByEmailIgnoreCase(reqEntity.getEmail()))) {
-            throw new IllegalArgumentException(
-                    "User with email '%s' is already existed".formatted(reqEntity.getEmail()));
+        if (Objects.nonNull(this.searchUserByIdentity(reqEntity.getEmail()))
+                || Objects.nonNull(this.searchUserByIdentity(reqEntity.getPhoneNumber()))
+                || Objects.nonNull(this.searchUserByIdentity(reqEntity.getUsername()))) {
+            throw new IllegalArgumentException("User with given identity already exists");
         }
 
         User preparedUser = User.builder()
@@ -99,14 +98,18 @@ public class UserService {
         return null;
     }
 
-    public String login(AuthenticationRequestEntity reqEntity) {
+    public Map<String, Object> login(AuthenticationRequestEntity reqEntity) {
         User loadedUser = this.searchUserByIdentity(reqEntity.getLoginIdentity());
 
         if (Objects.isNull(loadedUser) || !loadedUser.getHashedPassword().equals(reqEntity.getHashedPassword())) {
             throw new NullPointerException("Invalid username or password");
         }
 
-        return JwtUtils.issueAuthenticatedAccessToken(loadedUser);
+        Map<String, Object> result = new HashMap<>();
+        result.put("accessToken", JwtUtils.issueAuthenticatedAccessToken(loadedUser));
+        result.put("userDocumentEntity", loadedUser);
+
+        return result;
     }
 
     public Object removeUserById(String id) {
