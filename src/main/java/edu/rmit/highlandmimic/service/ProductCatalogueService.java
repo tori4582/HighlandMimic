@@ -1,5 +1,6 @@
 package edu.rmit.highlandmimic.service;
 
+import edu.rmit.highlandmimic.model.Product;
 import edu.rmit.highlandmimic.model.ProductCatalogue;
 import edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers;
 import edu.rmit.highlandmimic.model.request.ProductCatalogueRequestEntity;
@@ -10,8 +11,10 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Optional;
 
 import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToCatalogues;
+import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToProducts;
 import static java.util.Optional.ofNullable;
 
 @Service
@@ -19,6 +22,7 @@ import static java.util.Optional.ofNullable;
 public class ProductCatalogueService {
 
     private final ProductCatalogueRepository productCatalogueRepository;
+    private final ProductService productService;
 
     // READ operations
 
@@ -34,6 +38,14 @@ public class ProductCatalogueService {
         return productCatalogueRepository.getProductCataloguesByProductCatalogueNameContainsIgnoreCase(nameQuery);
     }
 
+    public List<Product> getProductsOfProductCatalogueById(String id) {
+        return Optional.ofNullable(this.getProductCatalogueById(id))
+                .map(loadedEntity -> convertListOfIdsToProducts(
+                            productService.getAllProducts(),
+                            loadedEntity.getAssociatedProductIds()
+                )).orElseThrow();
+    }
+
     // WRITE operations
 
     public ProductCatalogue createNewProductCatalogue(ProductCatalogueRequestEntity reqEntity) {
@@ -41,9 +53,10 @@ public class ProductCatalogueService {
                 .productCatalogueName(reqEntity.getName())
                 .description(reqEntity.getDescription())
                 .imageUrl(reqEntity.getImageUrl())
-                .subCatalogues(
-                        convertListOfIdsToCatalogues(this.getAllProductCatalogues(), reqEntity.getSubCatalogueIds())
-                )
+//                .subCatalogues(
+//                        convertListOfIdsToCatalogues(this.getAllProductCatalogues(), reqEntity.getSubCatalogueIds())
+//                )
+                .associatedProductIds(reqEntity.getProductIds())
                 .build();
 
         return productCatalogueRepository.save(preparedProductCatalogue);
@@ -58,9 +71,10 @@ public class ProductCatalogueService {
                     loadedEntity.setProductCatalogueName(reqEntity.getName());
                     loadedEntity.setDescription(reqEntity.getDescription());
                     loadedEntity.setImageUrl(reqEntity.getImageUrl());
-                    loadedEntity.setSubCatalogues(
-                            convertListOfIdsToCatalogues(this.getAllProductCatalogues(), reqEntity.getSubCatalogueIds())
-                    );
+//                    loadedEntity.setSubCatalogues(
+//                            convertListOfIdsToCatalogues(this.getAllProductCatalogues(), reqEntity.getSubCatalogueIds())
+//                    );
+                    loadedEntity.setAssociatedProductIds(reqEntity.getProductIds());
 
                     return loadedEntity;
                 }).orElseThrow();
@@ -87,10 +101,19 @@ public class ProductCatalogueService {
     public ProductCatalogue updateSubCatalogues(String id, List<String> subCatalogues) {
         return productCatalogueRepository.findById(id)
               .map(loadedEntity -> {
-                    loadedEntity.setSubCatalogues(
-                            convertListOfIdsToCatalogues(this.getAllProductCatalogues(), subCatalogues)
-                    );
+//                    loadedEntity.setSubCatalogues(
+//                            convertListOfIdsToCatalogues(this.getAllProductCatalogues(), subCatalogues)
+//                    );
 
+                    productCatalogueRepository.save(loadedEntity);
+                    return loadedEntity;
+                }).orElseThrow();
+    }
+
+    public ProductCatalogue updateAssociatedProducts(String id, List<String> productIds) {
+        return productCatalogueRepository.findById(id)
+                .map(loadedEntity -> {
+                    loadedEntity.setAssociatedProductIds(productIds);
                     productCatalogueRepository.save(loadedEntity);
                     return loadedEntity;
                 }).orElseThrow();
@@ -111,4 +134,7 @@ public class ProductCatalogueService {
         productCatalogueRepository.deleteAll();
         return quantity;
     }
+
+
+
 }

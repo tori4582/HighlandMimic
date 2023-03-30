@@ -24,7 +24,4 @@ public class UserRequestEntity {
     @Builder.Default
     private User.UserRole userRole = User.UserRole.CUSTOMER;
 
-    @Builder.Default
-    private User.AccountProvider accountProvider = User.AccountProvider.SELF_PROVIDED;
-
 }

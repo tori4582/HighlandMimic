@@ -3,10 +3,9 @@ package edu.rmit.highlandmimic.service;
 import edu.rmit.highlandmimic.common.JwtUtils;
 import edu.rmit.highlandmimic.model.User;
 import edu.rmit.highlandmimic.model.request.AuthenticationRequestEntity;
+import edu.rmit.highlandmimic.model.request.OAuth2AuthenticationRequestEntity;
 import edu.rmit.highlandmimic.model.request.UserRequestEntity;
 import edu.rmit.highlandmimic.repository.UserRepository;
-import javax.mail.MessagingException;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 import lombok.extern.slf4j.Slf4j;
@@ -71,10 +70,14 @@ public class UserService {
     public Object createNewUser(UserRequestEntity reqEntity) {
         // check if there is already an existing user in database
         // require that the user need to register with email firstly via SELF_PROVIDED method
-        if (Objects.nonNull(this.searchUserByIdentity(reqEntity.getEmail()))
-                || Objects.nonNull(this.searchUserByIdentity(reqEntity.getPhoneNumber()))
-                || Objects.nonNull(this.searchUserByIdentity(reqEntity.getUsername()))) {
-            throw new IllegalArgumentException("User with given identity already exists");
+        if (Objects.nonNull(this.searchUserByIdentity(reqEntity.getEmail()))) {
+            throw new IllegalArgumentException(String.format("User with given email '%s' is already exists", reqEntity.getEmail()));
+        }
+        if (Objects.nonNull(this.searchUserByIdentity(reqEntity.getPhoneNumber()))) {
+            throw new IllegalArgumentException(String.format("User with given phone number '%s' is already exists", reqEntity.getPhoneNumber()));
+        }
+        if (Objects.nonNull(this.searchUserByIdentity(reqEntity.getUsername()))) {
+            throw new IllegalArgumentException(String.format("User with given username '%s' is already exists", reqEntity.getUsername()));
         }
 
         User preparedUser = User.builder()
@@ -85,17 +88,75 @@ public class UserService {
                 .phoneNumber(reqEntity.getPhoneNumber())
                 .hashedPassword(reqEntity.getHashedPassword())
                 .userRole((User.UserRole) getOrDefault(reqEntity.getUserRole(), User.UserRole.CUSTOMER))
-                .accountProvider(
-                        (User.AccountProvider) getOrDefault(reqEntity.getAccountProvider(), User.AccountProvider.SELF_PROVIDED)
-                )
+                .associatedProviders(new HashMap<>())
                 .imageUrl(reqEntity.getImageUrl())
                 .build();
 
-        return userRepository.save(preparedUser);
+        User persistedUser = userRepository.save(preparedUser);
+        persistedUser.getAssociatedProviders().put(User.AccountProvider.SELF_PROVIDED, persistedUser.getUserId());
+
+        return userRepository.save(persistedUser);
     }
 
-    public Object loginViaOAuth2Provider(AuthenticationRequestEntity reqEntity) {
-        return null;
+    public User linkAccountWithAssociatedProvider(OAuth2AuthenticationRequestEntity reqEntity) {
+
+        User loadedUser = this.searchUserByIdentity(reqEntity.getOauth2ProviderUserIdentity());
+        if (Objects.isNull(loadedUser)) {
+            throw new NullPointerException("Invalid userId");
+        }
+
+        User.AccountProvider oauth2Provider = User.AccountProvider.valueOf(reqEntity.getOauth2ProviderProviderName());
+        String associatedUserId = loadedUser.getAssociatedProviders().getOrDefault(oauth2Provider, null);
+
+        if (Objects.nonNull(associatedUserId)) {
+            throw new NullPointerException("Already linked account, invalid request. Please consider to unlink associated provider before renewing it.");
+        }
+
+        loadedUser.getAssociatedProviders().put(oauth2Provider, reqEntity.getOauth2ProviderUserId());
+
+        return userRepository.save(loadedUser);
+    }
+
+    public User unlinkAccountWithAssociatedProvider(String userId, String associatedProviderName) {
+        User loadedUser = this.getUserById(userId);
+        if (Objects.isNull(loadedUser)) {
+            throw new NullPointerException("Invalid user identity. This could be caused since the user is not linked with any OAuth2 provider.");
+        }
+
+        User.AccountProvider oauth2Provider = User.AccountProvider.valueOf(associatedProviderName);
+        String associatedUserId = loadedUser.getAssociatedProviders().getOrDefault(oauth2Provider, null);
+
+        if (Objects.isNull(associatedUserId)) {
+            throw new NullPointerException("Invalid OAuth2 provider name. This could be caused since the user is not linked with any OAuth2 provider.");
+        }
+
+        loadedUser.getAssociatedProviders().remove(oauth2Provider);
+        return userRepository.save(loadedUser);
+    }
+
+    public Map<String, Object> loginViaOAuth2Provider(String userId, OAuth2AuthenticationRequestEntity reqEntity) {
+
+        User loadedUser = this.getUserById(userId);
+        if (Objects.isNull(loadedUser)) {
+            throw new NullPointerException("Invalid user identity. This could be caused since the user is not linked with any OAuth2 provider.");
+        }
+
+        User.AccountProvider oauth2Provider = User.AccountProvider.valueOf(reqEntity.getOauth2ProviderProviderName());
+        String associatedUserId = loadedUser.getAssociatedProviders().getOrDefault(oauth2Provider, null);
+
+        if (Objects.isNull(associatedUserId)) {
+            throw new NullPointerException("Invalid OAuth2 provider name. This could be caused since the user is not linked with any OAuth2 provider.");
+        }
+
+        if (!associatedUserId.equals(reqEntity.getOauth2ProviderUserId())) {
+            throw new NullPointerException("Invalid persisted associated userId. This could be caused since the user is not linked with any OAuth2 provider.");
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("accessToken", JwtUtils.issueAuthenticatedAccessToken(loadedUser));
+        result.put("userDocumentEntity", loadedUser);
+
+        return result;
     }
 
     public Map<String, Object> login(AuthenticationRequestEntity reqEntity) {
@@ -131,9 +192,9 @@ public class UserService {
                     loadedEntity.setHashedPassword(reqEntity.getHashedPassword());
                     loadedEntity.setImageUrl(reqEntity.getImageUrl());
                     loadedEntity.setUserRole((User.UserRole) getOrDefault(reqEntity.getUserRole(), User.UserRole.CUSTOMER));
-                    loadedEntity.setAccountProvider(
-                            (User.AccountProvider) getOrDefault(reqEntity.getAccountProvider(), User.AccountProvider.SELF_PROVIDED)
-                    );
+//                    loadedEntity.setAccountProvider(
+//                            (User.AccountProvider) getOrDefault(reqEntity.getAccountProvider(), User.AccountProvider.SELF_PROVIDED)
+//                    );
 
                     return loadedEntity;
                 }).orElseThrow();

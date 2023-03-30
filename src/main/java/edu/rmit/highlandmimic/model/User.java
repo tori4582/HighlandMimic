@@ -6,6 +6,8 @@ import lombok.NonNull;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Map;
+
 @Data
 @Builder(toBuilder = true)
 @Document("users")
@@ -32,13 +34,9 @@ public class User {
     private String imageUrl;
 
     @Builder.Default
-
     private UserRole userRole = UserRole.CUSTOMER;
 
-    @Builder.Default
-    private AccountProvider accountProvider = AccountProvider.SELF_PROVIDED;
-
-    private String accountProviderReferenceUid;
+    private Map<AccountProvider, String> associatedProviders;
 
     public enum UserRole {
         NO_ROLE,

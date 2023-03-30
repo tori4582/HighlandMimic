@@ -5,9 +5,9 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DocumentReference;
 
 import java.util.List;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -21,6 +21,8 @@ public class ProductCatalogue {
     private String description;
     private String imageUrl;
 
-    @DBRef
-    private List<ProductCatalogue> subCatalogues;
+//    @DBRef
+//    private List<ProductCatalogue> subCatalogues;
+
+    private List<String> associatedProductIds;
 }

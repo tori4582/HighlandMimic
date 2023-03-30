@@ -2,6 +2,7 @@ package edu.rmit.highlandmimic.controller;
 
 import edu.rmit.highlandmimic.model.User;
 import edu.rmit.highlandmimic.model.request.AuthenticationRequestEntity;
+import edu.rmit.highlandmimic.model.request.OAuth2AuthenticationRequestEntity;
 import edu.rmit.highlandmimic.model.request.UserRequestEntity;
 import edu.rmit.highlandmimic.model.response.AuthenticationResponseEntity;
 import edu.rmit.highlandmimic.service.UserService;
@@ -65,10 +66,10 @@ public class UserController {
         return controllerWrapper(() -> userService.login(reqEntity));
     }
 
-    @PostMapping("/login-oauth2")
-    public ResponseEntity<AuthenticationResponseEntity> loginViaOAuth2Provider(@RequestBody AuthenticationRequestEntity reqEntity) {
-//        return ResponseEntity.ok(userService.loginViaOAuth2Provider(reqEntity));
-        return null;
+    @PostMapping("/oauth2/login")
+    public ResponseEntity<?> loginViaOAuth2Provider(@RequestParam String userId,
+                                                    @RequestBody OAuth2AuthenticationRequestEntity reqEntity) {
+        return controllerWrapper(() -> userService.loginViaOAuth2Provider(userId, reqEntity));
     }
 
     // WRITE operation
@@ -78,12 +79,18 @@ public class UserController {
         return controllerWrapper(() -> userService.createNewUser(reqEntity));
     }
 
-    @PostMapping("/signup-oauth2")
-    public ResponseEntity<?> createNewUserWithOAuth2Provider(@RequestBody UserRequestEntity reqEntity) {
-        return controllerWrapper(() -> userService.createNewUser(reqEntity));
-    }
-
     // MODIFY operation
+
+    @PostMapping("/{identity}")
+    public ResponseEntity<?> updateExistingUser(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                    @PathVariable String identity,
+                                                    @RequestBody UserRequestEntity reqEntity) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> userService.updateExistingUser(identity, reqEntity),
+                SecurityHandler.ALLOW_STAKEHOLDERS
+        );
+    }
 
     @PostMapping("/{identity}/{fieldName}")
     public ResponseEntity<?> updateFieldValueOfExistingUser(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
@@ -93,7 +100,7 @@ public class UserController {
         return securityHandler.roleGuarantee(
                 authorizationToken,
                 () -> userService.updateFieldValueOfExistingUser(identity, fieldName, newValue),
-                SecurityHandler.ALLOW_AUTHORITIES
+                SecurityHandler.ALLOW_STAKEHOLDERS
         );
     }
 
@@ -112,6 +119,17 @@ public class UserController {
     public ResponseEntity<?> resetNewPasswordForExistingUser(@RequestParam String resetCredentials,
                                                              @RequestBody String newHashedPassword) {
         return controllerWrapper(() -> userService.resetNewPasswordForExistingUser(resetCredentials, newHashedPassword));
+    }
+
+    @PostMapping("/oauth2/link")
+    public ResponseEntity<?> linkAccountWithAssociatedProvider(@RequestBody OAuth2AuthenticationRequestEntity reqEntity) {
+        return controllerWrapper(() -> userService.linkAccountWithAssociatedProvider(reqEntity));
+    }
+
+    @PostMapping("/oauth2/unlink")
+    public ResponseEntity<?> linkAccountWithAssociatedProvider(@RequestParam String userId,
+                                                               @RequestParam String providerName) {
+        return controllerWrapper(() -> userService.unlinkAccountWithAssociatedProvider(userId, providerName));
     }
 
     // DELETE operation

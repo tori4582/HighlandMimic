@@ -11,5 +11,6 @@ public class ProductCatalogueRequestEntity {
     private String name;
     private String description;
     private String imageUrl;
-    private List<String> subCatalogueIds;
+//    private List<String> subCatalogueIds;
+    private List<String> productIds;
 }

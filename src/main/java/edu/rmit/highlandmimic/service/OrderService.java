@@ -140,4 +140,9 @@ public class OrderService {
 
         return orderRepository.save(preparedOrder);
     }
+
+    public List<Order> getAllOrdersByStatus(String orderStatus) {
+        List<Order> orderList = orderRepository.findAllByOrderStatusEquals(orderStatus);
+        return orderList;
+    }
 }

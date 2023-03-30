@@ -28,10 +28,7 @@ public class Order {
     @LastModifiedDate
     private String lastUpdated;
 
-    @Builder.Default
-    private OrderStatus status = OrderStatus.PENDING;
-
-    private Map<String, Integer> orderItems;
+    private List<OrderItem> orderItems;
 
     @Builder.Default
     private PaymentMethod selectedPaymentMethod = PaymentMethod.CASH;
@@ -72,5 +69,4 @@ public class Order {
         AT_STORE,
         DELIVERY
     }
-
 }

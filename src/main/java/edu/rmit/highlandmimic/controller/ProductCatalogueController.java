@@ -39,6 +39,11 @@ public class ProductCatalogueController {
         return ResponseEntity.ok(productCatalogueService.searchProductCataloguesByName(q));
     }
 
+    @GetMapping("/{id}/products")
+    public ResponseEntity<?> getProductsOfProductCatalogueById(@PathVariable String id) {
+        return controllerWrapper(() -> productCatalogueService.getProductsOfProductCatalogueById(id));
+    }
+
     // WRITE operation
 
     @PostMapping
@@ -83,6 +88,17 @@ public class ProductCatalogueController {
         return securityHandler.roleGuarantee(
                 authorizationToken,
                 () -> productCatalogueService.updateSubCatalogues(id, productCatalogueIds),
+                SecurityHandler.ALLOW_AUTHORITIES
+        );
+    }
+
+    @PostMapping("/{id}/products")
+    public ResponseEntity<?> updateAssociatedProducts(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                 @PathVariable String id,
+                                                 @RequestBody List<String> productIds) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> productCatalogueService.updateAssociatedProducts(id, productIds),
                 SecurityHandler.ALLOW_AUTHORITIES
         );
     }

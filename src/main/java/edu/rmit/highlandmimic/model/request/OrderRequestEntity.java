@@ -1,6 +1,7 @@
 package edu.rmit.highlandmimic.model.request;
 
 import edu.rmit.highlandmimic.model.Order;
+import edu.rmit.highlandmimic.model.OrderItem;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,7 +13,7 @@ import java.util.Map;
 public class OrderRequestEntity {
 
     private String userId;
-    private Map<String, Integer> orderItems;
+    private List<OrderItem> orderItems;
 
     private Order.PaymentMethod paymentMethod;
     private Order.PickupOption pickupOptions;
