@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Objects;
 
+import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
 import static java.util.Optional.ofNullable;
 
 @Service
@@ -18,6 +20,22 @@ import static java.util.Optional.ofNullable;
 public class CouponService {
 
     private final CouponRepository couponRepository;
+
+    public static Long getCouponDiscountAmount(Long totalOrderAmount, Coupon appliedCoupon) {
+        if (Objects.nonNull(appliedCoupon.getMinimumOrderAmountCriterion())
+                && totalOrderAmount < appliedCoupon.getMinimumOrderAmountCriterion()) {
+            return 0L;
+        }
+
+        Long discountedAmount = 0L;
+        if (Objects.nonNull(appliedCoupon.getDiscountRate())) {
+            discountedAmount += Math.round(appliedCoupon.getDiscountRate() * totalOrderAmount);
+            return (Math.abs(discountedAmount) > appliedCoupon.getDiscountRateCapAmount())
+                    ? appliedCoupon.getDiscountRateCapAmount()
+                    : discountedAmount;
+        }
+        return (Long) getOrDefault(appliedCoupon.getDiscountAmount(), 0L);
+    }
 
     // READ operations
 
@@ -42,6 +60,10 @@ public class CouponService {
                 .content(reqEntity.getContent())
                 .imageUrl(reqEntity.getImageUrl())
                 .dueDate(reqEntity.getDueDate())
+                .discountRate(reqEntity.getRate())
+                .discountAmount(reqEntity.getAmount())
+                .discountRateCapAmount(reqEntity.getCapAmount())
+                .minimumOrderAmountCriterion(reqEntity.getMinimumAmountCriterion())
                 .build();
 
         return couponRepository.save(preparedCoupon);
@@ -58,6 +80,10 @@ public class CouponService {
                     loadedEntity.setContent(reqEntity.getContent());
                     loadedEntity.setImageUrl(reqEntity.getImageUrl());
                     loadedEntity.setDueDate(reqEntity.getDueDate());
+                    loadedEntity.setDiscountRate(reqEntity.getRate());
+                    loadedEntity.setDiscountAmount(reqEntity.getAmount());
+                    loadedEntity.setDiscountRateCapAmount(reqEntity.getCapAmount());
+                    loadedEntity.setMinimumOrderAmountCriterion(reqEntity.getMinimumAmountCriterion());
 
                     return loadedEntity;
                 }).orElseThrow();

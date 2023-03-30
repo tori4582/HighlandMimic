@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static edu.rmit.highlandmimic.common.ControllerUtils.controllerWrapper;
+
 
 @RestController
 @RequestMapping("/stores")
@@ -48,6 +50,11 @@ public class StoreController {
                 () -> storeService.createNewStore(reqEntity),
                 List.of(User.UserRole.ADMIN)
         );
+    }
+
+    @PostMapping("/dev/create-bulks")
+    public ResponseEntity<?> createBulkStores(@RequestBody List<StoreRequestEntity> reqEntities) {
+        return controllerWrapper(() -> storeService.createBulkStores(reqEntities));
     }
 
     // MODIFY operation

@@ -11,4 +11,9 @@ public class CouponRequestEntity {
     private String code;
     private String imageUrl;
     private String dueDate;
+
+    private Double rate;
+    private Long amount;
+    private Long capAmount;
+    private Long minimumAmountCriterion;
 }

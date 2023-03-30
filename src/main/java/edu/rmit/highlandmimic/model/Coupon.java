@@ -17,4 +17,9 @@ public class Coupon {
     private String content;
     private String imageUrl;
     private String dueDate;
+    private Double discountRate;
+    private Long discountAmount;
+    private Long discountRateCapAmount;
+    private Long minimumOrderAmountCriterion;
+
 }

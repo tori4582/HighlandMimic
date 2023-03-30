@@ -1,7 +1,6 @@
 package edu.rmit.highlandmimic.service;
 
-import edu.rmit.highlandmimic.model.Order;
-import edu.rmit.highlandmimic.model.Product;
+import edu.rmit.highlandmimic.model.*;
 import edu.rmit.highlandmimic.model.request.OrderRequestEntity;
 import edu.rmit.highlandmimic.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
 import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToCoupons;
@@ -26,17 +26,29 @@ public class OrderService {
     private final UserService userService;
     private final CouponService couponService;
     private final StoreService storeService;
+    private final ToppingService toppingService;
 
 
     public List<Order> getOrdersOfUser(String userIdentity, String status) {
-        return Optional.ofNullable(userService.searchUserByIdentity(userIdentity))
-                .map(loadedUser -> Strings.isBlank(status)
-                        ? orderRepository.getOrdersByUserIdContains(loadedUser.getUserId())
-                        : orderRepository.getOrdersByUserIdContains(loadedUser.getUserId())
-                                .stream()
-                                .filter(e -> e.getOrderStatus().equals(Order.OrderStatus.valueOf(status.toUpperCase())))
-                                .toList()
-                ).orElseThrow();
+
+        List<Order> queryingOrders = null;
+
+        if (Strings.isBlank(userIdentity)) {
+            queryingOrders = orderRepository.findAll();
+        } else {
+            queryingOrders = Optional.ofNullable(userService.searchUserByIdentity(userIdentity))
+                    .map(User::getUserId)
+                    .map(orderRepository::getOrdersByUserIdContains)
+                    .orElseThrow(() -> new NullPointerException("There is no user associated given userIdentity"));
+        }
+
+        if (Strings.isBlank(status)) {
+            return queryingOrders;
+        }
+
+        return queryingOrders.stream()
+                .filter(e -> e.getOrderStatus().equals(Order.OrderStatus.valueOf(status.toUpperCase())))
+                .toList();
     }
 
     public Order getOrderById(String id) {
@@ -58,7 +70,30 @@ public class OrderService {
                 .address4(reqEntity.getAddress4())
                 .build();
 
+        preparedOrder.setOrderAmount(calculateAmountOfOrder(preparedOrder));
+
         return orderRepository.save(preparedOrder);
+    }
+
+    private Long calculateAmountOfOrder(Order preparedOrder) {
+        Long totalAmount = 0L;
+
+        for (OrderItem orderItem : preparedOrder.getOrderItems()) {
+            Product selectedProduct = productService.getProductById(orderItem.getProductId());
+            totalAmount += orderItem.getQuantity() * (selectedProduct.getPrice() +
+                    selectedProduct.getUpsizeOptions().get(orderItem.getSelectedSize()));
+
+            totalAmount += orderItem.getToppingIds().stream()
+                    .map(toppingService::getToppingById)
+                    .map(Topping::getPricePerService)
+                    .reduce(0L, Long::sum);
+        }
+
+        for (Coupon discountCoupon : preparedOrder.getAppliedCoupons()) {
+            totalAmount -= CouponService.getCouponDiscountAmount(
+                    totalAmount, discountCoupon);
+        }
+        return totalAmount;
     }
 
     private static Map<Product, Integer> convertMapOfProductIdsToMapOfProducts(List<Product> referenceProducts, Map<String, Integer> productIdsMap) {
@@ -69,10 +104,11 @@ public class OrderService {
         return preparedResultMap;
     }
 
-    public Object attachCouponsOntoOrder(String id, List<String> couponIds) {
+    public Order attachCouponsOntoOrder(String id, List<String> couponIds) {
         return Optional.ofNullable(this.getOrderById(id))
                 .map(loadedEntity -> {
                     loadedEntity.setAppliedCoupons(convertListOfIdsToCoupons(couponService.getAllCoupons(), couponIds));
+                    loadedEntity.setOrderAmount(calculateAmountOfOrder(loadedEntity));
                     return orderRepository.save(loadedEntity);
                 })
                 .orElseThrow();
@@ -134,6 +170,7 @@ public class OrderService {
                     loadedEntity.setAddress2(reqEntity.getAddress2());
                     loadedEntity.setAddress3(reqEntity.getAddress3());
                     loadedEntity.setAddress4(reqEntity.getAddress4());
+                    loadedEntity.setOrderAmount(calculateAmountOfOrder(loadedEntity));
 
                     return loadedEntity;
                 }).orElseThrow();
@@ -142,7 +179,6 @@ public class OrderService {
     }
 
     public List<Order> getAllOrdersByStatus(String orderStatus) {
-        List<Order> orderList = orderRepository.findAllByOrderStatusEquals(orderStatus);
-        return orderList;
+        return orderRepository.findAllByOrderStatusEquals(orderStatus);
     }
 }

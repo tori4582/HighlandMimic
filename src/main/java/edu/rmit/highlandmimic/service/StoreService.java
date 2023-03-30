@@ -100,4 +100,10 @@ public class StoreService {
         return quantity;
     }
 
+    public long createBulkStores(List<StoreRequestEntity> reqEntities) {
+        for (StoreRequestEntity entity : reqEntities) {
+            createNewStore(entity);
+        }
+        return reqEntities.size();
+    }
 }

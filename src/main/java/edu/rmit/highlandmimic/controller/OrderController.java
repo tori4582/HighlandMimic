@@ -39,16 +39,6 @@ public class OrderController {
         );
     }
 
-    @GetMapping()
-    public ResponseEntity<?> getAllOrdersByStatus(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
-                                                  @RequestParam String status) {
-        return securityHandler.roleGuarantee(
-                authorizationToken,
-                () -> orderService.getAllOrdersByStatus(status),
-                SecurityHandler.ALLOW_AUTHORITIES
-        );
-    }
-
     // WRITE Operations
     @PostMapping
     public ResponseEntity<?> createNewOrder(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
@@ -68,7 +58,7 @@ public class OrderController {
                                                 @RequestBody OrderRequestEntity reqEntity) {
         return securityHandler.roleGuarantee(
                 authorizationToken,
-                () -> orderService.createNewOrder(reqEntity),
+                () -> orderService.updatePendingOrder(id, reqEntity),
                 List.of(User.UserRole.CUSTOMER)
         );
     }

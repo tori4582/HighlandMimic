@@ -107,7 +107,7 @@ public class ProductService {
                 }).orElseThrow();
     }
 
-    public Object updateProductTags(String id, List<String> tagIds) {
+    public Product updateProductTags(String id, List<String> tagIds) {
         return productRepository.findById(id)
                 .map(loadedEntity -> {
                     loadedEntity.setTags(
