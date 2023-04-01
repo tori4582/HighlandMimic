@@ -14,6 +14,8 @@ public class UserRequestEntity {
     @Builder.Default
     private Boolean isMale = true;
 
+    private String birthOfDate;
+
     private String email;
     private String phoneNumber;
 

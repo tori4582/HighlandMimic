@@ -24,6 +24,8 @@ public class User {
     @Builder.Default
     private Boolean isMale = true;
 
+    private String birthOfDate;
+
     @NonNull
     private String email;
     private String phoneNumber;

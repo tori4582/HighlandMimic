@@ -26,4 +26,6 @@ public class OrderRequestEntity {
     private String address3;
     private String address4;
 
+    private String orderNote;
+
 }

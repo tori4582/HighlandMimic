@@ -93,6 +93,11 @@ public class StoreController {
         );
     }
 
+    @DeleteMapping("/dev/remove/duplicated")
+    public ResponseEntity<?> removeStoreByDuplicatedName() {
+        return controllerWrapper(() -> storeService.removeStoreByDuplicatedName());
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> removeStoreById(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
                                              @PathVariable String id) {

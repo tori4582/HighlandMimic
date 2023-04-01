@@ -17,6 +17,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
+import static edu.rmit.highlandmimic.common.ExceptionLogger.LOG_OAUTH2_INVALID_USER_IDENTITY;
 import static java.util.Optional.ofNullable;
 
 @Slf4j
@@ -27,8 +28,6 @@ public class UserService {
     private final MailService mailService;
     private final SimpleInternalCredentialService simpleInternalCredentialService;
 
-    private final String resetPasswordEndpoint;
-
     public UserService(@Value("${server.endpoint}") String resetPasswordEndpoint,
                        @Autowired UserRepository userRepository,
                        @Autowired MailService mailService,
@@ -37,7 +36,6 @@ public class UserService {
         this.userRepository = userRepository;
         this.mailService = mailService;
         this.simpleInternalCredentialService = simpleInternalCredentialService;
-        this.resetPasswordEndpoint = resetPasswordEndpoint;
     }
 
 
@@ -70,6 +68,7 @@ public class UserService {
     public Object createNewUser(UserRequestEntity reqEntity) {
         // check if there is already an existing user in database
         // require that the user need to register with email firstly via SELF_PROVIDED method
+
         if (Objects.nonNull(this.searchUserByIdentity(reqEntity.getEmail()))) {
             throw new IllegalArgumentException(String.format("User with given email '%s' is already exists", reqEntity.getEmail()));
         }
@@ -90,6 +89,7 @@ public class UserService {
                 .userRole((User.UserRole) getOrDefault(reqEntity.getUserRole(), User.UserRole.CUSTOMER))
                 .associatedProviders(new HashMap<>())
                 .imageUrl(reqEntity.getImageUrl())
+                .birthOfDate(reqEntity.getBirthOfDate())
                 .build();
 
         User persistedUser = userRepository.save(preparedUser);
@@ -100,16 +100,15 @@ public class UserService {
 
     public User linkAccountWithAssociatedProvider(OAuth2AuthenticationRequestEntity reqEntity) {
 
-        User loadedUser = this.searchUserByIdentity(reqEntity.getOauth2ProviderUserIdentity());
-        if (Objects.isNull(loadedUser)) {
-            throw new NullPointerException("Invalid userId");
-        }
+        User loadedUser = Objects.requireNonNull(
+                this.searchUserByIdentity(reqEntity.getOauth2ProviderUserIdentity()),
+                LOG_OAUTH2_INVALID_USER_IDENTITY
+        );
 
-        User.AccountProvider oauth2Provider = User.AccountProvider.valueOf(reqEntity.getOauth2ProviderProviderName());
+        User.AccountProvider oauth2Provider = User.AccountProvider.valueOf(reqEntity.getOauth2ProviderProviderName().toUpperCase());
         String associatedUserId = loadedUser.getAssociatedProviders().getOrDefault(oauth2Provider, null);
-
         if (Objects.nonNull(associatedUserId)) {
-            throw new NullPointerException("Already linked account, invalid request. Please consider to unlink associated provider before renewing it.");
+            throw new IllegalArgumentException("Already linked account, invalid request. Please consider to unlink associated provider before renewing it.");
         }
 
         loadedUser.getAssociatedProviders().put(oauth2Provider, reqEntity.getOauth2ProviderUserId());
@@ -118,37 +117,28 @@ public class UserService {
     }
 
     public User unlinkAccountWithAssociatedProvider(String userId, String associatedProviderName) {
-        User loadedUser = this.getUserById(userId);
-        if (Objects.isNull(loadedUser)) {
-            throw new NullPointerException("Invalid user identity. This could be caused since the user is not linked with any OAuth2 provider.");
-        }
+        User loadedUser = Objects.requireNonNull(this.getUserById(userId), LOG_OAUTH2_INVALID_USER_IDENTITY);
 
         User.AccountProvider oauth2Provider = User.AccountProvider.valueOf(associatedProviderName);
-        String associatedUserId = loadedUser.getAssociatedProviders().getOrDefault(oauth2Provider, null);
-
-        if (Objects.isNull(associatedUserId)) {
-            throw new NullPointerException("Invalid OAuth2 provider name. This could be caused since the user is not linked with any OAuth2 provider.");
-        }
+        Objects.requireNonNull(
+                loadedUser.getAssociatedProviders().getOrDefault(oauth2Provider, null),
+                LOG_OAUTH2_INVALID_USER_IDENTITY
+        );
 
         loadedUser.getAssociatedProviders().remove(oauth2Provider);
         return userRepository.save(loadedUser);
     }
 
-    public Map<String, Object> loginViaOAuth2Provider(String userId, OAuth2AuthenticationRequestEntity reqEntity) {
+    public Map<String, Object> loginViaOAuth2Provider(OAuth2AuthenticationRequestEntity reqEntity) {
+        User loadedUser = Objects.requireNonNull(
+                this.searchUserByIdentity(reqEntity.getOauth2ProviderUserIdentity()),
+                LOG_OAUTH2_INVALID_USER_IDENTITY
+        );
 
-        User loadedUser = this.getUserById(userId);
-        if (Objects.isNull(loadedUser)) {
-            throw new NullPointerException("Invalid user identity. This could be caused since the user is not linked with any OAuth2 provider.");
-        }
-
-        User.AccountProvider oauth2Provider = User.AccountProvider.valueOf(reqEntity.getOauth2ProviderProviderName());
+        User.AccountProvider oauth2Provider = User.AccountProvider.valueOf(reqEntity.getOauth2ProviderProviderName().toUpperCase());
         String associatedUserId = loadedUser.getAssociatedProviders().getOrDefault(oauth2Provider, null);
 
-        if (Objects.isNull(associatedUserId)) {
-            throw new NullPointerException("Invalid OAuth2 provider name. This could be caused since the user is not linked with any OAuth2 provider.");
-        }
-
-        if (!associatedUserId.equals(reqEntity.getOauth2ProviderUserId())) {
+        if (Objects.isNull(associatedUserId) || !associatedUserId.equals(reqEntity.getOauth2ProviderUserId())) {
             throw new NullPointerException("Invalid persisted associated userId. This could be caused since the user is not linked with any OAuth2 provider.");
         }
 
@@ -192,9 +182,7 @@ public class UserService {
                     loadedEntity.setHashedPassword(reqEntity.getHashedPassword());
                     loadedEntity.setImageUrl(reqEntity.getImageUrl());
                     loadedEntity.setUserRole((User.UserRole) getOrDefault(reqEntity.getUserRole(), User.UserRole.CUSTOMER));
-//                    loadedEntity.setAccountProvider(
-//                            (User.AccountProvider) getOrDefault(reqEntity.getAccountProvider(), User.AccountProvider.SELF_PROVIDED)
-//                    );
+                    loadedEntity.setBirthOfDate(reqEntity.getBirthOfDate());
 
                     return loadedEntity;
                 }).orElseThrow();
@@ -205,8 +193,8 @@ public class UserService {
     @SneakyThrows
     public User updateFieldValueOfExistingUser(String identity, String fieldName, Object newValue) {
 
-        final List<String> unmodifiableFields = List.of("userId", "userRole", "accountProvider");
-        if (!unmodifiableFields.contains(fieldName)) {
+        final List<String> unmodifiableFields = List.of("userId", "userRole", "accountProvider", "hashedPassword");
+        if (unmodifiableFields.contains(fieldName)) {
             throw new IllegalAccessException("Invalid action, unable to update unmodifiable field");
         }
 
@@ -228,25 +216,20 @@ public class UserService {
     }
 
     @SneakyThrows
-    public void issueResetPasswordMail(String emailAddress, String forwardResetClientUrl) {
+    public String issueResetPasswordMail(String emailAddress) {
         User receiver = Optional.ofNullable(userRepository.findByEmailIgnoreCase(emailAddress))
                 .orElseThrow(() -> {throw new NullPointerException("Invalid email address: " + emailAddress);});
 
-        String credential = this.simpleInternalCredentialService.issueAndPersistResetCredentials(receiver.getUsername());
+        SimpleInternalCredentialService.ResetRequestCredential credentialEntry = this.simpleInternalCredentialService.issueAndPersistResetCredential(receiver.getUsername());
 
-        if (forwardResetClientUrl.contains("?")) {
-            forwardResetClientUrl += forwardResetClientUrl.contains("?") ? "&" : "?";
-        }
+        mailService.issueResetPassword(receiver, credentialEntry.getResetToken());
 
-        String resetPasswordPath =  forwardResetClientUrl
-                + (forwardResetClientUrl.contains("?") ? "&" : "?")
-                + "resetCredential=" + credential;
-        mailService.issueResetPassword(receiver, resetPasswordPath);
+        return credentialEntry.getResetCredential();
     }
 
-    public Object resetNewPasswordForExistingUser(String resetCredential, String newHashedPassword) {
+    public User resetNewPasswordForExistingUser(String resetCredential, String newHashedPassword) {
         String userEmail = simpleInternalCredentialService.acceptResetCredential(resetCredential);
-        User preparedUser = userRepository.findByEmailIgnoreCase(userEmail);
+        User preparedUser = this.searchUserByIdentity(userEmail);
 
         preparedUser.setHashedPassword(newHashedPassword);
 
@@ -259,5 +242,9 @@ public class UserService {
         preparedUser.setUserRole(User.UserRole.valueOf(newRole));
 
         return userRepository.save(preparedUser);
+    }
+
+    public boolean validateResetToken(String resetCredential, String resetToken) {
+        return simpleInternalCredentialService.isValid(resetCredential, resetToken);
     }
 }

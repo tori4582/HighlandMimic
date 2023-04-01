@@ -41,10 +41,8 @@ public class ControllerUtils {
     }
 
     private static ResponseEntity<?> switchExceptionsResponse(Exception e) {
-
         return (exceptionalResponseMappings.containsKey(e.getClass()))
                 ? ((ResponseEntity.BodyBuilder) exceptionalResponseMappings.get(e.getClass())).body(e.getMessage())
                 : ResponseEntity.internalServerError().body(ExceptionLogger.ResponseException.fromExceptionObject(e));
-
     }
 }

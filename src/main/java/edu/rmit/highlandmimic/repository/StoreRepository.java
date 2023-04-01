@@ -10,5 +10,7 @@ import java.util.List;
 public interface StoreRepository extends MongoRepository<Store, String> {
 
     List<Store> getStoreByAddress4(String address4);
-    List<Store> getStoreByStoreNameContains(String nameQuery);
+    List<Store> findStoresByStoreNameContainingIgnoreCase(String nameQuery);
+
+    List<Store> removeStoreByStoreName(String name);
 }

@@ -13,6 +13,9 @@ import java.util.stream.Stream;
 @Slf4j
 public class ExceptionLogger {
 
+    public static final String LOG_NOT_IMPLEMENTED = "Feature is not implemented yet or being implemented.";
+    public static final String LOG_OAUTH2_INVALID_USER_IDENTITY = "Invalid user identity. This could be caused since the user is not linked with any OAuth2 provider.";
+
     private enum ExceptionTag {
         INVALID_ACTION,
         UNEXPECTED_ISSUE
@@ -24,7 +27,7 @@ public class ExceptionLogger {
     public static void logUnexpectedIssue(Exception e) { logException(ExceptionTag.UNEXPECTED_ISSUE, e);}
 
     private static void logException(ExceptionTag tag, Exception e) {
-        log.error(getExceptionTag(tag) + "%s : ".formatted(e.getClass().getSimpleName()) + e.getMessage());
+        log.warn(getExceptionTag(tag) + "%s : ".formatted(e.getClass().getSimpleName()) + e.getMessage());
     }
 
     private static String getExceptionTag(ExceptionTag tag) {
@@ -32,7 +35,7 @@ public class ExceptionLogger {
     }
 
     public static ResponseEntity<String> getNotImplementedResponse() {
-        return new ResponseEntity<>("Feature is not implemented yet or being implemented.", HttpStatus.NOT_IMPLEMENTED);
+        return new ResponseEntity<>(LOG_NOT_IMPLEMENTED, HttpStatus.NOT_IMPLEMENTED);
     }
 
     @Data

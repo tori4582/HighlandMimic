@@ -27,9 +27,14 @@ public class UserController {
     // READ operations
 
     @GetMapping("/issue-rspwmail")
-    public ResponseEntity<?> resetPassword(@RequestParam String email,
-                                           @RequestParam String forward) {
-        return controllerWrapper(() -> userService.issueResetPasswordMail(email, forward));
+    public ResponseEntity<?> resetPassword(@RequestParam String email) {
+        return controllerWrapper(() -> userService.issueResetPasswordMail(email));
+    }
+
+    @PostMapping("/validate-reset-token")
+    public ResponseEntity<?> validateResetToken(@RequestParam String resetCredential,
+                                                @RequestBody String resetToken) {
+        return controllerWrapper(() -> userService.validateResetToken(resetCredential, resetToken));
     }
 
     @GetMapping
@@ -67,9 +72,8 @@ public class UserController {
     }
 
     @PostMapping("/oauth2/login")
-    public ResponseEntity<?> loginViaOAuth2Provider(@RequestParam String userId,
-                                                    @RequestBody OAuth2AuthenticationRequestEntity reqEntity) {
-        return controllerWrapper(() -> userService.loginViaOAuth2Provider(userId, reqEntity));
+    public ResponseEntity<?> loginViaOAuth2Provider(@RequestBody OAuth2AuthenticationRequestEntity reqEntity) {
+        return controllerWrapper(() -> userService.loginViaOAuth2Provider(reqEntity));
     }
 
     // WRITE operation
@@ -116,20 +120,30 @@ public class UserController {
     }
 
     @PostMapping("/reset-pass")
-    public ResponseEntity<?> resetNewPasswordForExistingUser(@RequestParam String resetCredentials,
+    public ResponseEntity<?> resetNewPasswordForExistingUser(@RequestParam String resetCredential,
                                                              @RequestBody String newHashedPassword) {
-        return controllerWrapper(() -> userService.resetNewPasswordForExistingUser(resetCredentials, newHashedPassword));
+        return controllerWrapper(() -> userService.resetNewPasswordForExistingUser(resetCredential, newHashedPassword));
     }
 
     @PostMapping("/oauth2/link")
-    public ResponseEntity<?> linkAccountWithAssociatedProvider(@RequestBody OAuth2AuthenticationRequestEntity reqEntity) {
-        return controllerWrapper(() -> userService.linkAccountWithAssociatedProvider(reqEntity));
+    public ResponseEntity<?> linkAccountWithAssociatedProvider(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                               @RequestBody OAuth2AuthenticationRequestEntity reqEntity) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> userService.linkAccountWithAssociatedProvider(reqEntity),
+                SecurityHandler.ALLOW_STAKEHOLDERS
+        );
     }
 
     @PostMapping("/oauth2/unlink")
-    public ResponseEntity<?> linkAccountWithAssociatedProvider(@RequestParam String userId,
-                                                               @RequestParam String providerName) {
-        return controllerWrapper(() -> userService.unlinkAccountWithAssociatedProvider(userId, providerName));
+    public ResponseEntity<?> unlinkAccountWithAssociatedProvider(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                                 @RequestParam String userId,
+                                                                 @RequestParam String providerName) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> userService.unlinkAccountWithAssociatedProvider(userId, providerName),
+                SecurityHandler.ALLOW_STAKEHOLDERS
+        );
     }
 
     // DELETE operation

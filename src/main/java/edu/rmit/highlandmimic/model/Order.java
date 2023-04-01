@@ -51,6 +51,8 @@ public class Order {
 
     private OrderStatus orderStatus;
 
+    private String orderCustomerNote;
+
     public enum OrderStatus {
         PENDING,
         PLACED,

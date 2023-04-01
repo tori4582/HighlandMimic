@@ -8,7 +8,9 @@ import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static java.util.Optional.ofNullable;
@@ -23,7 +25,7 @@ public class StoreService {
         return storeRepository.findAll();
     }
 
-    public List<Store> getStoresByAddress4(String address4) {
+    public List<Store> findStoresByStoreNameContainingIgnoreCase(String address4) {
         return storeRepository.getStoreByAddress4(address4);
     }
 
@@ -32,7 +34,7 @@ public class StoreService {
     }
 
     public List<Store> searchStoresByName(String nameQuery) {
-        return storeRepository.getStoreByStoreNameContains(nameQuery);
+        return storeRepository.findStoresByStoreNameContainingIgnoreCase(nameQuery);
     }
 
     public Store createNewStore(StoreRequestEntity reqEntity) {
@@ -105,5 +107,20 @@ public class StoreService {
             createNewStore(entity);
         }
         return reqEntities.size();
+    }
+
+    public int removeStoreByDuplicatedName() {
+        List<Store> stores = this.getAllStores();
+        Set<String> storeNames = new HashSet<>();
+        int counter = 0;
+        for (Store store : stores) {
+            if (storeNames.contains(store.getStoreName())) {
+                this.removeStoreById(store.getStoreId());
+                counter++;
+            } else {
+                storeNames.add(store.getStoreName());
+            }
+        }
+        return counter;
     }
 }

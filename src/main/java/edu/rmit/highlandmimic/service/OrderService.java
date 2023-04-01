@@ -68,6 +68,7 @@ public class OrderService {
                 .address2(reqEntity.getAddress2())
                 .address3(reqEntity.getAddress3())
                 .address4(reqEntity.getAddress4())
+                .orderCustomerNote(reqEntity.getOrderNote())
                 .build();
 
         preparedOrder.setOrderAmount(calculateAmountOfOrder(preparedOrder));
@@ -171,6 +172,7 @@ public class OrderService {
                     loadedEntity.setAddress3(reqEntity.getAddress3());
                     loadedEntity.setAddress4(reqEntity.getAddress4());
                     loadedEntity.setOrderAmount(calculateAmountOfOrder(loadedEntity));
+                    loadedEntity.setOrderCustomerNote(reqEntity.getOrderNote());
 
                     return loadedEntity;
                 }).orElseThrow();
