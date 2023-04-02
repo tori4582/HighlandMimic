@@ -47,7 +47,7 @@ public class Order {
     private Long orderAmount;
 
     @DBRef
-    private List<Coupon> appliedCoupons;
+    private Coupon appliedCoupon;
 
     private OrderStatus orderStatus;
 

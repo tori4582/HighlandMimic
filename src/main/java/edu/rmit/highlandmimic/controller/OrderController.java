@@ -4,11 +4,14 @@ import edu.rmit.highlandmimic.model.User;
 import edu.rmit.highlandmimic.model.request.OrderRequestEntity;
 import edu.rmit.highlandmimic.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.dataflow.qual.Deterministic;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
+import static edu.rmit.highlandmimic.common.ControllerUtils.controllerWrapper;
 
 @RestController
 @RequestMapping("/order")
@@ -76,10 +79,10 @@ public class OrderController {
     @PostMapping("/{id}/coupons")
     public ResponseEntity<?> attachCouponsOntoOrder(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
                                                     @PathVariable String id,
-                                                    @RequestBody List<String> couponIds) {
+                                                    @RequestBody String couponId) {
         return securityHandler.roleGuarantee(
                 authorizationToken,
-                () -> orderService.attachCouponsOntoOrder(id, couponIds),
+                () -> orderService.attachCouponsOntoOrder(id, couponId),
                 List.of(User.UserRole.CUSTOMER)
         );
     }
@@ -105,7 +108,20 @@ public class OrderController {
         );
     }
 
+    @DeleteMapping("/dev/all")
+    public ResponseEntity<?> removeAllOrder() {
+        return controllerWrapper(orderService::removeAllOrder);
+    }
 
+    @DeleteMapping("/truncate-cart")
+    public ResponseEntity<?> truncateCart(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                          @RequestParam String userIdentity) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> orderService.truncateCart(userIdentity),
+                List.of(User.UserRole.CUSTOMER)
+        );
+    }
 
 
 

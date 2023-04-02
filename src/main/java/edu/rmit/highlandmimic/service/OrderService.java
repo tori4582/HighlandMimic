@@ -14,8 +14,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
-import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToCoupons;
-import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToProducts;
+import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.*;
+import static edu.rmit.highlandmimic.service.CouponService.getCouponDiscountAmount;
 
 @Service
 @RequiredArgsConstructor
@@ -55,13 +55,25 @@ public class OrderService {
         return orderRepository.findById(id).orElse(null);
     }
 
+    private List<OrderItem> transformFrom(List<OrderRequestEntity.OrderItemRequestEntity> orderItemRequestEntity) {
+
+        return orderItemRequestEntity.stream()
+                .map(e -> OrderItem.builder()
+                    .product(productService.getProductById(e.getProductId()))
+                    .quantity(e.getQuantity())
+                    .toppings(convertListOfIdsToToppings(toppingService.getAllToppings(), e.getToppingIds()))
+                    .selectedSize(e.getSelectedSize())
+                    .build())
+                .toList();
+    }
+
     public Order createNewOrder(OrderRequestEntity reqEntity) {
         Order preparedOrder = Order.builder()
                 .userId(reqEntity.getUserId())
-                .orderItems(reqEntity.getOrderItems())
+                .orderItems(transformFrom(reqEntity.getOrderItems()))
                 .selectedPaymentMethod((Order.PaymentMethod) getOrDefault(reqEntity.getPaymentMethod(), Order.PaymentMethod.CASH))
                 .selectedPickupOption((Order.PickupOption) getOrDefault(reqEntity.getPickupOptions(), Order.PickupOption.AT_STORE))
-                .appliedCoupons(convertListOfIdsToCoupons(couponService.getAllCoupons(), reqEntity.getCouponIds()))
+                .appliedCoupon(couponService.getCouponById(reqEntity.getCouponId()))
                 .selectedPickupStore(storeService.getStoreById(reqEntity.getStoreId()))
                 .orderStatus(Order.OrderStatus.PENDING)
                 .address1(reqEntity.getAddress1())
@@ -80,21 +92,18 @@ public class OrderService {
         Long totalAmount = 0L;
 
         for (OrderItem orderItem : preparedOrder.getOrderItems()) {
-            Product selectedProduct = productService.getProductById(orderItem.getProductId());
+            Product selectedProduct = orderItem.getProduct();
             totalAmount += orderItem.getQuantity() * (selectedProduct.getPrice() +
                     selectedProduct.getUpsizeOptions().get(orderItem.getSelectedSize()));
 
-            totalAmount += orderItem.getToppingIds().stream()
-                    .map(toppingService::getToppingById)
+            totalAmount += orderItem.getToppings().stream()
                     .map(Topping::getPricePerService)
                     .reduce(0L, Long::sum);
         }
 
-        for (Coupon discountCoupon : preparedOrder.getAppliedCoupons()) {
-            totalAmount -= CouponService.getCouponDiscountAmount(
-                    totalAmount, discountCoupon);
-        }
-        return totalAmount;
+        Long discountingAmount = CouponService.getCouponDiscountAmount(totalAmount, preparedOrder.getAppliedCoupon());
+
+        return totalAmount - discountingAmount;
     }
 
     private static Map<Product, Integer> convertMapOfProductIdsToMapOfProducts(List<Product> referenceProducts, Map<String, Integer> productIdsMap) {
@@ -105,10 +114,10 @@ public class OrderService {
         return preparedResultMap;
     }
 
-    public Order attachCouponsOntoOrder(String id, List<String> couponIds) {
+    public Order attachCouponsOntoOrder(String id, String couponId) {
         return Optional.ofNullable(this.getOrderById(id))
                 .map(loadedEntity -> {
-                    loadedEntity.setAppliedCoupons(convertListOfIdsToCoupons(couponService.getAllCoupons(), couponIds));
+                    loadedEntity.setAppliedCoupon(couponService.getCouponById(couponId));
                     loadedEntity.setOrderAmount(calculateAmountOfOrder(loadedEntity));
                     return orderRepository.save(loadedEntity);
                 })
@@ -162,8 +171,8 @@ public class OrderService {
         Order preparedOrder = Optional.of(loadedOrder)
                 .filter(order -> order.getOrderStatus().equals(Order.OrderStatus.PENDING))
                 .map(loadedEntity -> {
-                    loadedEntity.setOrderItems(reqEntity.getOrderItems());
-                    loadedEntity.setAppliedCoupons(convertListOfIdsToCoupons(couponService.getAllCoupons(), reqEntity.getCouponIds()));
+                    loadedEntity.setOrderItems(transformFrom(reqEntity.getOrderItems()));
+                    loadedEntity.setAppliedCoupon(couponService.getCouponById(reqEntity.getCouponId()));
                     loadedEntity.setSelectedPickupStore(storeService.getStoreById(reqEntity.getStoreId()));
                     loadedEntity.setSelectedPaymentMethod(reqEntity.getPaymentMethod());
                     loadedEntity.setSelectedPickupOption(reqEntity.getPickupOptions());
@@ -182,5 +191,19 @@ public class OrderService {
 
     public List<Order> getAllOrdersByStatus(String orderStatus) {
         return orderRepository.findAllByOrderStatusEquals(orderStatus);
+    }
+
+    public long removeAllOrder() {
+        long quantity = orderRepository.count();
+        orderRepository.deleteAll();
+        return quantity;
+    }
+
+    public List<Order> truncateCart(String userIdentity) {
+        List<Order> pendingOrders = this.getOrdersOfUser(userIdentity, "PENDING");
+
+        pendingOrders.stream().map(Order::getOrderId).forEach(orderRepository::deleteById);
+
+        return pendingOrders;
     }
 }

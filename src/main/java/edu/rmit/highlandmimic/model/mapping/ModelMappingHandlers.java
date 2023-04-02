@@ -27,7 +27,7 @@ public class ModelMappingHandlers {
                         ).toList()
                 ).orElse(new ArrayList<>());
     }
-
+    
     public static List<Tag> convertListOfIdsToTags(List<Tag> tags, List<String> tagIds) {
         return Optional.ofNullable(tagIds)
                 .map(ids -> ids.stream().map(

@@ -2,6 +2,7 @@ package edu.rmit.highlandmimic.model;
 
 import lombok.Builder;
 import lombok.Data;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 
 import java.util.List;
 
@@ -9,9 +10,10 @@ import java.util.List;
 @Builder
 public class OrderItem {
 
-    private String productId;
+    @DBRef
+    private Product product;
     private Integer quantity;
-    private List<String> toppingIds;
+    private List<Topping> toppings;
     private String selectedSize;
 
 }

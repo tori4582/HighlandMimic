@@ -13,12 +13,12 @@ import java.util.Map;
 public class OrderRequestEntity {
 
     private String userId;
-    private List<OrderItem> orderItems;
+    private List<OrderItemRequestEntity> orderItems;
 
     private Order.PaymentMethod paymentMethod;
     private Order.PickupOption pickupOptions;
 
-    private List<String> couponIds;
+    private String couponId;
     private String storeId;
 
     private String address1;
@@ -28,4 +28,13 @@ public class OrderRequestEntity {
 
     private String orderNote;
 
+
+    @Data
+    @Builder
+    public static class OrderItemRequestEntity {
+        private String productId;
+        private Integer quantity;
+        private List<String> toppingIds;
+        private String selectedSize;
+    }
 }
