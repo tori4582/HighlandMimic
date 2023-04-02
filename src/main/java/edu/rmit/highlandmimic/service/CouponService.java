@@ -24,6 +24,11 @@ public class CouponService {
 
     @SneakyThrows
     public static Long getCouponDiscountAmount(Long totalOrderAmount, Coupon appliedCoupon) {
+
+        if (Objects.isNull(appliedCoupon)) {
+            return 0L;
+        }
+
         if (Objects.nonNull(appliedCoupon.getMinimumOrderAmountCriterion())
                 && totalOrderAmount < appliedCoupon.getMinimumOrderAmountCriterion()) {
             throw new Exception("Your order is not eligible for this coupon: Not enough order amount");
