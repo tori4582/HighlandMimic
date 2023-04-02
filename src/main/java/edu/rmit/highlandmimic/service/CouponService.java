@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
 import static java.util.Optional.ofNullable;
@@ -45,7 +46,7 @@ public class CouponService {
     }
 
     public Coupon getCouponById(String id) {
-        return couponRepository.findById(id).orElse(null);
+        return Optional.ofNullable(id).flatMap(couponRepository::findById).orElse(null);
     }
 
     public List<Coupon> searchCouponsByName(String nameQuery) {

@@ -31,7 +31,7 @@ public class ExceptionLogger {
         log.warn(getExceptionTag(tag) + "%s : ".formatted(response.getExceptionName()) + response.getMessage());
         log.warn("\tThis is caused by: " + response.getClassName() + "::"  + response.getMethodName() + "@line:" + response.getLineNumber());
         log.warn("\tStack trace could be helpful:");
-        response.getStackTrace().stream().limit(10).forEach(line -> log.warn("\t\t| " + line));
+        response.getStackTrace().stream().limit(25).forEach(line -> log.warn("\t\t| " + line));
     }
 
     private static String getExceptionTag(ExceptionTag tag) {
