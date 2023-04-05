@@ -18,7 +18,8 @@ public class ControllerUtils {
             NoSuchElementException.class, ResponseEntity.notFound(),
             NullPointerException.class, ResponseEntity.notFound(),
             IllegalArgumentException.class, ResponseEntity.badRequest(),
-            NoSuchFieldException.class, ResponseEntity.badRequest()
+            NoSuchFieldException.class, ResponseEntity.badRequest(),
+            UnsupportedOperationException.class, ResponseEntity.internalServerError()
     );
 
     public static ResponseEntity<?> controllerWrapper(Supplier<?> controllerExecution) {

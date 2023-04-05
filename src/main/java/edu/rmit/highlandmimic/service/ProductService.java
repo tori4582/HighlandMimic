@@ -3,7 +3,6 @@ package edu.rmit.highlandmimic.service;
 import edu.rmit.highlandmimic.model.Product;
 import edu.rmit.highlandmimic.model.request.ProductRequestEntity;
 import edu.rmit.highlandmimic.repository.ProductRepository;
-import edu.rmit.highlandmimic.repository.ToppingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.lang.reflect.Field;
 import java.util.List;
 
-import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.*;
+import static edu.rmit.highlandmimic.common.ModelMappingHandlers.*;
 import static java.util.Optional.ofNullable;
 
 @Service

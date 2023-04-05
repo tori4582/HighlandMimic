@@ -28,6 +28,8 @@ spring:
     ansi:
       enabled: ALWAYS
 
+  main:
+    allow-circular-references: true
 
   data:
     mongodb:

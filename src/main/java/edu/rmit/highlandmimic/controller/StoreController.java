@@ -84,7 +84,7 @@ public class StoreController {
 
     // DELETE operation
 
-    @DeleteMapping()
+    @DeleteMapping("/dev/all")
     public ResponseEntity<?> removeAllStores(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken) {
         return securityHandler.roleGuarantee(
                 authorizationToken,

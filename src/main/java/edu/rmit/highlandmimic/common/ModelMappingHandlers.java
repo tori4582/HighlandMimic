@@ -1,10 +1,34 @@
-package edu.rmit.highlandmimic.model.mapping;
+package edu.rmit.highlandmimic.common;
 
 import edu.rmit.highlandmimic.model.*;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class ModelMappingHandlers {
+
+    public static <T, U, Y> Boolean verifyAssociation(String existingSourceId,
+                                                List<T> checkingDependencies,
+                                                Function<T, Optional<U>> nullGuardian,
+                                                Function<? super U, ? extends Y> mappingFunction) {
+        return checkingDependencies.stream()
+                .anyMatch(dependency -> nullGuardian.apply(dependency)
+                        .map(mappingFunction)
+                        .map(associatedId -> associatedId.toString().equalsIgnoreCase(existingSourceId))
+                        .orElse(false)
+                );
+    }
+
+    public static <T, U, Y> void associationGuardianBeforeTakingAction(String existingSourceId,
+                                                List<T> checkingDependencies,
+                                                Function<T, Optional<U>> nullGuardian,
+                                                Function<? super U,? extends Y> mappingFunction) {
+        boolean isAssociated = verifyAssociation(existingSourceId, checkingDependencies, nullGuardian, mappingFunction);
+        if (isAssociated) {
+            throw new UnsupportedOperationException("Action is blocked due to existence of association of object id:" + existingSourceId);
+        }
+    }
 
     public static List<ProductCatalogue> convertListOfIdsToCatalogues(List<ProductCatalogue> catalogues, List<String> catalogueIds) {
         return Optional.ofNullable(catalogueIds)

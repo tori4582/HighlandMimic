@@ -2,7 +2,6 @@ package edu.rmit.highlandmimic.service;
 
 import edu.rmit.highlandmimic.model.Product;
 import edu.rmit.highlandmimic.model.ProductCatalogue;
-import edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers;
 import edu.rmit.highlandmimic.model.request.ProductCatalogueRequestEntity;
 import edu.rmit.highlandmimic.repository.ProductCatalogueRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +12,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
 
-import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToCatalogues;
-import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.convertListOfIdsToProducts;
+import static edu.rmit.highlandmimic.common.ModelMappingHandlers.convertListOfIdsToProducts;
 import static java.util.Optional.ofNullable;
 
 @Service

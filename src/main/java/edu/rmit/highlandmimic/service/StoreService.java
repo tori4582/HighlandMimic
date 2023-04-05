@@ -1,25 +1,32 @@
 package edu.rmit.highlandmimic.service;
 
+import edu.rmit.highlandmimic.model.Order;
 import edu.rmit.highlandmimic.model.Store;
 import edu.rmit.highlandmimic.model.request.StoreRequestEntity;
 import edu.rmit.highlandmimic.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
+import static edu.rmit.highlandmimic.common.ModelMappingHandlers.verifyAssociation;
 import static java.util.Optional.ofNullable;
 
 @Service
-@RequiredArgsConstructor
 public class StoreService {
 
     private final StoreRepository storeRepository;
+    private final OrderService orderService;
+
+    @Autowired
+    public StoreService(StoreRepository storeRepository, @Lazy OrderService orderService) {
+        this.storeRepository = storeRepository;
+        this.orderService = orderService;
+    }
 
     public List<Store> getAllStores() {
         return storeRepository.findAll();
@@ -89,6 +96,27 @@ public class StoreService {
     // DELETE operations
 
     public Store removeStoreById(String id) {
+
+        Objects.requireNonNull(storeRepository.findById(id));
+
+//        Boolean isHavingDependency = orderService.getOrdersOfUser("", "")
+//                .stream()
+//                .anyMatch(order -> Optional.ofNullable(order.getSelectedPickupStore())
+//                        .map(Store::getStoreId)
+//                        .map(storeId -> storeId.equalsIgnoreCase(id))
+//                        .orElse(false)
+//                );
+
+        Boolean isHavingDependency = verifyAssociation(
+                id, orderService.getOrdersOfUser("", ""),
+                (order) -> Optional.ofNullable(((Order) order).getSelectedPickupStore()),
+                Store::getStoreId
+        );
+
+        if (isHavingDependency) {
+            throw new UnsupportedOperationException("Store with id: '" + id + "' has associated orders. Action is blocked!");
+        }
+
         return storeRepository.findById(id)
                 .map(project -> {
                     storeRepository.delete(project);

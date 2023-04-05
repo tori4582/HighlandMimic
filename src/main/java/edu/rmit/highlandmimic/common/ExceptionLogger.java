@@ -28,14 +28,14 @@ public class ExceptionLogger {
 
     private static void logException(ExceptionTag tag, Exception e) {
         ResponseException response = ResponseException.fromExceptionObject(e);
-        log.warn(getExceptionTag(tag) + "%s : ".formatted(response.getExceptionName()) + response.getMessage());
-        log.warn("\tThis is caused by: " + response.getClassName() + "::"  + response.getMethodName() + "@line:" + response.getLineNumber());
-        log.warn("\tStack trace could be helpful:");
-        response.getStackTrace().stream().limit(25).forEach(line -> log.warn("\t\t| " + line));
+        log.warn(getExceptionTag(tag) + "\u001B[93m %s \u001B[0m: \u001B[3;97m\"%s\"\u001B[0m".formatted(response.getExceptionName(), response.getMessage()));
+        log.warn("\t\tThis is caused by: " + response.getClassName() + "::"  + response.getMethodName() + "@line:" + response.getLineNumber());
+        log.warn("\t\tStack trace could be helpful:");
+        response.getStackTrace().stream().limit(25).forEach(line -> log.warn("\t\t\t| " + line));
     }
 
     private static String getExceptionTag(ExceptionTag tag) {
-        return "[%s] ".formatted(tag.name());
+        return "\u001B[1;91m[%s]\u001B[0m".formatted(tag.name());
     }
 
     public static ResponseEntity<String> getNotImplementedResponse() {

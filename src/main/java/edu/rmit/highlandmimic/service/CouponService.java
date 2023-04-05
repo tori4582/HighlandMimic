@@ -6,6 +6,8 @@ import edu.rmit.highlandmimic.model.request.CouponRequestEntity;
 import edu.rmit.highlandmimic.repository.CouponRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
@@ -17,10 +19,16 @@ import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
 import static java.util.Optional.ofNullable;
 
 @Service
-@RequiredArgsConstructor
 public class CouponService {
 
     private final CouponRepository couponRepository;
+    private final OrderService orderService;
+
+    @Autowired
+    public CouponService(CouponRepository couponRepository, @Lazy OrderService orderService) {
+        this.couponRepository = couponRepository;
+        this.orderService = orderService;
+    }
 
     @SneakyThrows
     public static Long getCouponDiscountAmount(Long totalOrderAmount, Coupon appliedCoupon) {
@@ -113,6 +121,9 @@ public class CouponService {
     // DELETE operations
 
     public Coupon removeCouponById(String id) {
+
+        Objects.requireNonNull(couponRepository.findById(id));
+
         return couponRepository.findById(id)
                 .map(loadedEntity -> {
                     couponRepository.delete(loadedEntity);

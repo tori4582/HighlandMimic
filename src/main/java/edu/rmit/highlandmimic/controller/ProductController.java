@@ -99,7 +99,7 @@ public class ProductController {
 
     // DELETE operation
 
-    @DeleteMapping()
+    @DeleteMapping("/dev/all")
     public ResponseEntity<?> removeAllProducts(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken) {
         return securityHandler.roleGuarantee(
                 authorizationToken,

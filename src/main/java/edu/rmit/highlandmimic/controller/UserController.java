@@ -148,7 +148,7 @@ public class UserController {
 
     // DELETE operation
 
-    @DeleteMapping()
+    @DeleteMapping("/dev/all")
     public ResponseEntity<?> removeAllUsers(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken) {
         return securityHandler.roleGuarantee(
                 authorizationToken,
@@ -163,7 +163,7 @@ public class UserController {
         return securityHandler.roleGuarantee(
                 authorizationToken,
                 () -> userService.removeUserById(id),
-                SecurityHandler.ALLOW_AUTHORITIES
+                SecurityHandler.ALLOW_STAKEHOLDERS
         );
     }
 

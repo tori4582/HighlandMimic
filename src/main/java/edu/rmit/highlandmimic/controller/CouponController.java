@@ -75,7 +75,7 @@ public class CouponController {
 
     // DELETE operation
 
-    @DeleteMapping()
+    @DeleteMapping("/dev/all")
     public ResponseEntity<?> removeAllCoupons(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken) {
         return securityHandler.roleGuarantee(
                 authorizationToken,

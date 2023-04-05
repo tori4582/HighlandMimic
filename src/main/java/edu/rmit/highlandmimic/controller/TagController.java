@@ -77,7 +77,7 @@ public class TagController {
 
     // DELETE operation
 
-    @DeleteMapping()
+    @DeleteMapping("/dev/all")
     public ResponseEntity<?> removeAllTags(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken) {
         return securityHandler.roleGuarantee(
                 authorizationToken,

@@ -11,11 +11,9 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
-import static edu.rmit.highlandmimic.model.mapping.ModelMappingHandlers.*;
-import static edu.rmit.highlandmimic.service.CouponService.getCouponDiscountAmount;
+import static edu.rmit.highlandmimic.common.ModelMappingHandlers.*;
 
 @Service
 @RequiredArgsConstructor
@@ -74,14 +72,20 @@ public class OrderService {
                 .selectedPaymentMethod((Order.PaymentMethod) getOrDefault(reqEntity.getPaymentMethod(), Order.PaymentMethod.CASH))
                 .selectedPickupOption((Order.PickupOption) getOrDefault(reqEntity.getPickupOptions(), Order.PickupOption.AT_STORE))
                 .appliedCoupon(couponService.getCouponById(reqEntity.getCouponId()))
-                .selectedPickupStore(storeService.getStoreById(reqEntity.getStoreId()))
                 .orderStatus(Order.OrderStatus.PENDING)
-                .address1(reqEntity.getAddress1())
-                .address2(reqEntity.getAddress2())
-                .address3(reqEntity.getAddress3())
-                .address4(reqEntity.getAddress4())
                 .orderCustomerNote(reqEntity.getOrderNote())
                 .build();
+
+        if (reqEntity.getPickupOptions().equals(Order.PickupOption.DELIVERY)) {
+            preparedOrder.setAddress1(reqEntity.getAddress1());
+            preparedOrder.setAddress2(reqEntity.getAddress2());
+            preparedOrder.setAddress3(reqEntity.getAddress3());
+            preparedOrder.setAddress4(reqEntity.getAddress4());
+        } else {
+            preparedOrder.setSelectedPickupStore(
+                    storeService.getStoreById(reqEntity.getStoreId())
+            );
+        }
 
         preparedOrder.setOrderAmount(calculateAmountOfOrder(preparedOrder));
 
@@ -93,12 +97,13 @@ public class OrderService {
 
         for (OrderItem orderItem : preparedOrder.getOrderItems()) {
             Product selectedProduct = orderItem.getProduct();
-            totalAmount += orderItem.getQuantity() * (selectedProduct.getPrice() +
-                    selectedProduct.getUpsizeOptions().get(orderItem.getSelectedSize()));
 
-            totalAmount += orderItem.getToppings().stream()
+            Long itemAmount = (selectedProduct.getPrice() + selectedProduct.getUpsizeOptions().get(orderItem.getSelectedSize()));
+            Long toppingsAmount = orderItem.getToppings().stream()
                     .map(Topping::getPricePerService)
                     .reduce(0L, Long::sum);
+
+            totalAmount += (itemAmount + toppingsAmount) * orderItem.getQuantity();
         }
 
         Long discountingAmount = CouponService.getCouponDiscountAmount(totalAmount, preparedOrder.getAppliedCoupon());
@@ -176,12 +181,19 @@ public class OrderService {
                     loadedEntity.setSelectedPickupStore(storeService.getStoreById(reqEntity.getStoreId()));
                     loadedEntity.setSelectedPaymentMethod(reqEntity.getPaymentMethod());
                     loadedEntity.setSelectedPickupOption(reqEntity.getPickupOptions());
-                    loadedEntity.setAddress1(reqEntity.getAddress1());
-                    loadedEntity.setAddress2(reqEntity.getAddress2());
-                    loadedEntity.setAddress3(reqEntity.getAddress3());
-                    loadedEntity.setAddress4(reqEntity.getAddress4());
                     loadedEntity.setOrderAmount(calculateAmountOfOrder(loadedEntity));
                     loadedEntity.setOrderCustomerNote(reqEntity.getOrderNote());
+
+                    if (reqEntity.getPickupOptions().equals(Order.PickupOption.DELIVERY)) {
+                        loadedEntity.setAddress1(reqEntity.getAddress1());
+                        loadedEntity.setAddress2(reqEntity.getAddress2());
+                        loadedEntity.setAddress3(reqEntity.getAddress3());
+                        loadedEntity.setAddress4(reqEntity.getAddress4());
+                    } else {
+                        loadedEntity.setSelectedPickupStore(
+                                storeService.getStoreById(reqEntity.getStoreId())
+                        );
+                    }
 
                     return loadedEntity;
                 }).orElseThrow();
