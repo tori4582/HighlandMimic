@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 
 import static edu.rmit.highlandmimic.common.ModelMappingHandlers.*;
 import static java.util.Optional.ofNullable;
@@ -85,11 +86,16 @@ public class ProductService {
 
     @SneakyThrows
     public Product updateFieldValueOfExistingProduct(String id, String fieldName, Object newValue) {
+
+        System.out.println(newValue.getClass().getName());
+
         Product preparedProduct =  ofNullable(this.getProductById(id)).orElseThrow();
 
         Field preparedField = preparedProduct.getClass().getDeclaredField(fieldName);
         preparedField.setAccessible(true);
-        preparedField.set(preparedProduct, newValue);
+        preparedField.set(preparedProduct, (List.of("price").contains(fieldName))
+                ? newValue
+                : Long.valueOf(newValue.toString()));
 
         return productRepository.save(preparedProduct);
     }
@@ -136,4 +142,12 @@ public class ProductService {
     }
 
 
+    public Product updateUpsizeOptionsOfExistingProduct(String id, Map<String, Long> upsizeOptions) {
+        return productRepository.findById(id)
+                .map(loadedEntity -> {
+                    loadedEntity.setUpsizeOptions(upsizeOptions);
+                    productRepository.save(loadedEntity);
+                    return loadedEntity;
+                }).orElseThrow();
+    }
 }

@@ -111,14 +111,6 @@ public class OrderService {
         return totalAmount - discountingAmount;
     }
 
-    private static Map<Product, Integer> convertMapOfProductIdsToMapOfProducts(List<Product> referenceProducts, Map<String, Integer> productIdsMap) {
-        List<Product> products = convertListOfIdsToProducts(referenceProducts, new ArrayList<>(productIdsMap.keySet()));
-        Map<Product, Integer> preparedResultMap = new HashMap<>();
-
-        products.forEach(product -> preparedResultMap.put(product, productIdsMap.get(product.getProductId())));
-        return preparedResultMap;
-    }
-
     public Order attachCouponsOntoOrder(String id, String couponId) {
         return Optional.ofNullable(this.getOrderById(id))
                 .map(loadedEntity -> {

@@ -10,6 +10,8 @@ import org.springframework.data.auditing.DateTimeProvider;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 @Slf4j
@@ -19,7 +21,7 @@ public class ApplicationConfiguration {
 
     @Bean
     public DateTimeProvider auditingDateTimeProvider() {
-        return () -> Optional.of(LocalDateTime.now());
+        return () -> Optional.of(LocalDateTime.now().atZone(ZoneId.of("UTC+07:00")));
     }
 
     @EventListener

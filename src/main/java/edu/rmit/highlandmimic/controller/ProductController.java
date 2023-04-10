@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 import static edu.rmit.highlandmimic.common.ControllerUtils.controllerWrapper;
 
@@ -71,6 +72,17 @@ public class ProductController {
         return securityHandler.roleGuarantee(
                 authorizationToken,
                 () -> productService.updateFieldValueOfExistingProduct(id, fieldName, newValue),
+                List.of(User.UserRole.ADMIN)
+        );
+    }
+
+    @PostMapping("/{id}/upsizeOptions")
+    public ResponseEntity<?> updateUpsizeOptionsOfExistingProduct(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                                  @PathVariable String id,
+                                                                  @RequestBody Map<String, Long> upsizeOptions) {
+        return securityHandler.roleGuarantee(
+                authorizationToken,
+                () -> productService.updateUpsizeOptionsOfExistingProduct(id, upsizeOptions),
                 List.of(User.UserRole.ADMIN)
         );
     }
