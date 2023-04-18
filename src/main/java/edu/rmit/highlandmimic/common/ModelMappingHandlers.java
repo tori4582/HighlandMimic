@@ -4,7 +4,7 @@ import edu.rmit.highlandmimic.model.*;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 public class ModelMappingHandlers {
 
@@ -18,6 +18,19 @@ public class ModelMappingHandlers {
                         .map(associatedId -> associatedId.toString().equalsIgnoreCase(existingSourceId))
                         .orElse(false)
                 );
+    }
+
+    // You have a List<A>, but A contains a List<B> => you have a List<List<B>> (after map: TransformMapping)
+    // then, you flat a whole list of B into a single list of B => List<B> (after flat)
+    // B contains a singular element of C, => List<C> (after map: PointingMapping)
+    public static <A, B, C> Set<? extends C> mergeElementsOfSublistIntoASingleSet(List<A> containers,
+                                                                                   Function<? super A, ? extends List<B>> transformMapper,
+                                                                                   Function<? super B, ? extends C> pointingMapper) {
+        return containers.stream()
+                .map(transformMapper)
+                .flatMap(List::stream)
+                .map(pointingMapper)
+                .collect(Collectors.toSet());
     }
 
     public static <T, U, Y> void associationGuardianBeforeTakingAction(String existingSourceId,

@@ -1,22 +1,36 @@
 package edu.rmit.highlandmimic.service;
 
+import edu.rmit.highlandmimic.model.Product;
 import edu.rmit.highlandmimic.model.Tag;
 import edu.rmit.highlandmimic.model.request.TagRequestEntity;
 import edu.rmit.highlandmimic.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
+import static edu.rmit.highlandmimic.common.ModelMappingHandlers.associationGuardianBeforeTakingAction;
+import static edu.rmit.highlandmimic.common.ModelMappingHandlers.mergeElementsOfSublistIntoASingleSet;
 import static java.util.Optional.ofNullable;
 
 @Service
-@RequiredArgsConstructor
 public class TagService {
 
     private final TagRepository tagRepository;
+
+    private final ProductService productService;
+
+    @Autowired
+    private TagService(TagRepository tagRepository, @Lazy ProductService productService) {
+        this.tagRepository = tagRepository;
+        this.productService = productService;
+    }
 
     // READ operations
 
@@ -75,6 +89,21 @@ public class TagService {
     // DELETE operations
 
     public Tag removeTagById(String id) {
+
+        Objects.requireNonNull(this.getTagById(id));
+
+        var tagsFromAllProducts = mergeElementsOfSublistIntoASingleSet(
+                productService.getAllProducts(),
+                Product::getTags,
+                Tag::getTagId
+        ).stream().toList();
+
+        associationGuardianBeforeTakingAction(
+                id, tagsFromAllProducts,
+                Optional::of,
+                Object::toString
+        );
+
         return tagRepository.findById(id)
                 .map(loadedEntity -> {
                     tagRepository.delete(loadedEntity);

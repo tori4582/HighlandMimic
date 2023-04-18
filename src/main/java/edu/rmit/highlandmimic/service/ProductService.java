@@ -1,26 +1,48 @@
 package edu.rmit.highlandmimic.service;
 
+import edu.rmit.highlandmimic.model.Order;
+import edu.rmit.highlandmimic.model.OrderItem;
 import edu.rmit.highlandmimic.model.Product;
+import edu.rmit.highlandmimic.model.ProductCatalogue;
 import edu.rmit.highlandmimic.model.request.ProductRequestEntity;
 import edu.rmit.highlandmimic.repository.ProductRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 import static edu.rmit.highlandmimic.common.ModelMappingHandlers.*;
 import static java.util.Optional.ofNullable;
 
 @Service
-@RequiredArgsConstructor
 public class ProductService {
 
     private final ProductRepository productRepository;
     private final ToppingService toppingService;
     private final TagService tagService;
+
+    private final OrderService orderService;
+
+    private final ProductCatalogueService productCatalogueService;
+
+    @Autowired
+    public ProductService(ProductRepository productRepository,
+                          ToppingService toppingService,
+                          TagService tagService,
+                          @Lazy OrderService orderService,
+                          @Lazy ProductCatalogueService productCatalogueService) {
+        this.productRepository = productRepository;
+        this.toppingService = toppingService;
+        this.tagService = tagService;
+        this.orderService = orderService;
+        this.productCatalogueService = productCatalogueService;
+    }
 
     // READ operations
 
@@ -128,6 +150,33 @@ public class ProductService {
     // DELETE operations
 
     public Product removeProductById(String id) {
+
+        Objects.requireNonNull(productRepository.findById(id));
+
+        var productsFromAllOrders = mergeElementsOfSublistIntoASingleSet(
+                orderService.getOrdersOfUser("", ""),
+                Order::getOrderItems,
+                OrderItem::getProduct
+        ).stream().toList();
+
+        associationGuardianBeforeTakingAction(
+                id, productsFromAllOrders,
+                Optional::of,
+                Product::getProductId
+        );
+
+        var productIdsFromProductCatalogues = mergeElementsOfSublistIntoASingleSet(
+                productCatalogueService.getAllProductCatalogues(),
+                ProductCatalogue::getAssociatedProductIds,
+                String::toString
+        ).stream().toList();
+
+        associationGuardianBeforeTakingAction(
+                id, productIdsFromProductCatalogues,
+                Optional::of,
+                Object::toString
+        );
+
         return productRepository.findById(id)
                 .map(loadedEntity -> {
                     productRepository.delete(loadedEntity);

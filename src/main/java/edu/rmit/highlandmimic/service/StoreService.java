@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.lang.reflect.Field;
 import java.util.*;
 
+import static edu.rmit.highlandmimic.common.ModelMappingHandlers.associationGuardianBeforeTakingAction;
 import static edu.rmit.highlandmimic.common.ModelMappingHandlers.verifyAssociation;
 import static java.util.Optional.ofNullable;
 
@@ -99,23 +100,11 @@ public class StoreService {
 
         Objects.requireNonNull(storeRepository.findById(id));
 
-//        Boolean isHavingDependency = orderService.getOrdersOfUser("", "")
-//                .stream()
-//                .anyMatch(order -> Optional.ofNullable(order.getSelectedPickupStore())
-//                        .map(Store::getStoreId)
-//                        .map(storeId -> storeId.equalsIgnoreCase(id))
-//                        .orElse(false)
-//                );
-
-        Boolean isHavingDependency = verifyAssociation(
+        associationGuardianBeforeTakingAction(
                 id, orderService.getOrdersOfUser("", ""),
                 (order) -> Optional.ofNullable(((Order) order).getSelectedPickupStore()),
                 Store::getStoreId
         );
-
-        if (isHavingDependency) {
-            throw new UnsupportedOperationException("Store with id: '" + id + "' has associated orders. Action is blocked!");
-        }
 
         return storeRepository.findById(id)
                 .map(project -> {

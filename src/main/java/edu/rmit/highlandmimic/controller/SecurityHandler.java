@@ -68,7 +68,7 @@ public class SecurityHandler {
         return userRepository.existsByUserId(userId);
     }
 
-    private Boolean checkIfRoleMatchesWithUser(String userId, User.UserRole role) {
+    private boolean checkIfRoleMatchesWithUser(String userId, User.UserRole role) {
         return userRepository.findById(userId)
                 .map(user -> user.getUserRole().equals(role))
                 .orElseThrow(() -> new NullPointerException("Invalid user information"));

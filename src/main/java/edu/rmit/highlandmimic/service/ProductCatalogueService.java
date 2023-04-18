@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static edu.rmit.highlandmimic.common.ModelMappingHandlers.convertListOfIdsToProducts;
@@ -120,6 +121,7 @@ public class ProductCatalogueService {
     // DELETE operations
 
     public ProductCatalogue removeProductCatalogueById(String id) {
+
         return productCatalogueRepository.findById(id)
                 .map(loadedEntity -> {
                     productCatalogueRepository.delete(loadedEntity);

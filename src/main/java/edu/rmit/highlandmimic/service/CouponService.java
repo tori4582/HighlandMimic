@@ -1,6 +1,7 @@
 package edu.rmit.highlandmimic.service;
 
 import edu.rmit.highlandmimic.model.Coupon;
+import edu.rmit.highlandmimic.model.Order;
 import edu.rmit.highlandmimic.model.ProductCatalogue;
 import edu.rmit.highlandmimic.model.request.CouponRequestEntity;
 import edu.rmit.highlandmimic.repository.CouponRepository;
@@ -16,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static edu.rmit.highlandmimic.common.CommonUtils.getOrDefault;
+import static edu.rmit.highlandmimic.common.ModelMappingHandlers.associationGuardianBeforeTakingAction;
 import static java.util.Optional.ofNullable;
 
 @Service
@@ -123,6 +125,12 @@ public class CouponService {
     public Coupon removeCouponById(String id) {
 
         Objects.requireNonNull(couponRepository.findById(id));
+
+        associationGuardianBeforeTakingAction(
+                id, orderService.getOrdersOfUser("", ""),
+                (order) -> Optional.ofNullable(((Order) order).getAppliedCoupon()),
+                Coupon::getCouponCode
+        );
 
         return couponRepository.findById(id)
                 .map(loadedEntity -> {

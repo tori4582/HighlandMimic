@@ -8,6 +8,9 @@ import lombok.SneakyThrows;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -65,6 +68,14 @@ public class OrderService {
                 .toList();
     }
 
+    private String getCurrentDateTimeString() {
+        return LocalDateTime.now(
+                    ZoneId.of("Asia/Ho_Chi_Minh")
+                ).format(
+                    DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
+                );
+    }
+
     public Order createNewOrder(OrderRequestEntity reqEntity) {
         Order preparedOrder = Order.builder()
                 .userId(reqEntity.getUserId())
@@ -74,6 +85,8 @@ public class OrderService {
                 .appliedCoupon(couponService.getCouponById(reqEntity.getCouponId()))
                 .orderStatus(Order.OrderStatus.PENDING)
                 .orderCustomerNote(reqEntity.getOrderNote())
+                .createdDate(getCurrentDateTimeString())
+                .lastUpdated(getCurrentDateTimeString())
                 .build();
 
         if (reqEntity.getPickupOptions().equals(Order.PickupOption.DELIVERY)) {
@@ -175,6 +188,7 @@ public class OrderService {
                     loadedEntity.setSelectedPickupOption(reqEntity.getPickupOptions());
                     loadedEntity.setOrderAmount(calculateAmountOfOrder(loadedEntity));
                     loadedEntity.setOrderCustomerNote(reqEntity.getOrderNote());
+                    loadedEntity.setLastUpdated(getCurrentDateTimeString());
 
                     if (reqEntity.getPickupOptions().equals(Order.PickupOption.DELIVERY)) {
                         loadedEntity.setAddress1(reqEntity.getAddress1());

@@ -23,10 +23,8 @@ public class Order {
 
     private String userId;
 
-    @CreatedDate
     private String createdDate;
 
-    @LastModifiedDate
     private String lastUpdated;
 
     private List<OrderItem> orderItems;
