@@ -2,9 +2,9 @@ package edu.rmit.highlandmimic.service;
 
 import edu.rmit.highlandmimic.model.Product;
 import edu.rmit.highlandmimic.model.Tag;
+import edu.rmit.highlandmimic.model.WeatherRecommend;
 import edu.rmit.highlandmimic.model.request.TagRequestEntity;
 import edu.rmit.highlandmimic.repository.TagRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -25,11 +25,15 @@ public class TagService {
     private final TagRepository tagRepository;
 
     private final ProductService productService;
+    private final RecommendService recommendService;
 
     @Autowired
-    private TagService(TagRepository tagRepository, @Lazy ProductService productService) {
+    private TagService(TagRepository tagRepository,
+                       @Lazy ProductService productService,
+                       @Lazy RecommendService recommendService) {
         this.tagRepository = tagRepository;
         this.productService = productService;
+        this.recommendService = recommendService;
     }
 
     // READ operations
@@ -100,6 +104,18 @@ public class TagService {
 
         associationGuardianBeforeTakingAction(
                 id, tagsFromAllProducts,
+                Optional::of,
+                Object::toString
+        );
+
+        var tagsFromAllWeatherRecommendations = mergeElementsOfSublistIntoASingleSet(
+                recommendService.getWeatherRecommends(),
+                WeatherRecommend::getTags,
+                Tag::getTagId
+        ).stream().toList();
+
+        associationGuardianBeforeTakingAction(
+                id, tagsFromAllWeatherRecommendations,
                 Optional::of,
                 Object::toString
         );

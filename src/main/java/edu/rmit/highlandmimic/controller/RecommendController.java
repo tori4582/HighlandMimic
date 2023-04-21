@@ -33,22 +33,24 @@ public class RecommendController {
 
   @GetMapping("/weather")
   public ResponseEntity<WeatherDTO> getWeather(@RequestParam("lat") double lat,
-      @RequestParam("lon") double lon) throws JsonProcessingException {
+                                               @RequestParam("lon") double lon) throws JsonProcessingException {
     return ResponseEntity.ok(weatherService.getWeather(lat, lon));
   }
 
   @GetMapping
   public ResponseEntity<List<Product>> getRecommendProducts(@RequestParam("lat") double lat,
-      @RequestParam("lon") double lon) throws JsonProcessingException {
+                                                            @RequestParam("lon") double lon) throws JsonProcessingException {
     return ResponseEntity.ok(recommendService.getRecommendedProducts(lat, lon));
   }
 
   @PostMapping
-  public ResponseEntity<?> createWeatherRecommend(
-      @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
-      @RequestBody WeatherRecommendRequestEntity request) {
-    return securityHandler.roleGuarantee(authorizationToken,
-        () -> recommendService.createNewWeatherRecommend(request), List.of(User.UserRole.ADMIN));
+  public ResponseEntity<?> createWeatherRecommend(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
+                                                  @RequestBody WeatherRecommendRequestEntity request) {
+    return securityHandler.roleGuarantee(
+            authorizationToken,
+            () -> recommendService.createNewWeatherRecommend(request),
+            List.of(User.UserRole.ADMIN)
+    );
   }
 
   @GetMapping("/list")

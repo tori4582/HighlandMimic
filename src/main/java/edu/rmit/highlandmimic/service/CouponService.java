@@ -3,6 +3,7 @@ package edu.rmit.highlandmimic.service;
 import edu.rmit.highlandmimic.model.Coupon;
 import edu.rmit.highlandmimic.model.Order;
 import edu.rmit.highlandmimic.model.ProductCatalogue;
+import edu.rmit.highlandmimic.model.User;
 import edu.rmit.highlandmimic.model.request.CouponRequestEntity;
 import edu.rmit.highlandmimic.repository.CouponRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,10 +27,15 @@ public class CouponService {
     private final CouponRepository couponRepository;
     private final OrderService orderService;
 
+    private final UserService userService;
+
     @Autowired
-    public CouponService(CouponRepository couponRepository, @Lazy OrderService orderService) {
+    public CouponService(CouponRepository couponRepository,
+                         @Lazy OrderService orderService,
+                         @Lazy UserService userService) {
         this.couponRepository = couponRepository;
         this.orderService = orderService;
+        this.userService = userService;
     }
 
     @SneakyThrows
@@ -145,4 +151,17 @@ public class CouponService {
         return quantity;
     }
 
+    public List<Coupon> getAvailableCouponsForUser(String userId) {
+
+        User loadedUser = userService.getUserById(userId);
+        Objects.requireNonNull(loadedUser);
+
+        List<Coupon> allCoupons = this.getAllCoupons();
+        List<Coupon> usedCoupons = orderService.getOrdersOfUser(loadedUser.getUsername(), Order.OrderStatus.COMPLETED.toString())
+                .stream()
+                .map(Order::getAppliedCoupon)
+                .toList();
+
+        return allCoupons.stream().filter(coupon -> !usedCoupons.contains(coupon)).toList();
+    }
 }
