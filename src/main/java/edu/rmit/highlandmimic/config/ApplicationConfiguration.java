@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Configuration
@@ -34,5 +35,9 @@ public class ApplicationConfiguration {
         // do sth
     }
 
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
 }
 

@@ -2,16 +2,16 @@ spring:
   web:
     resources:
       static-locations: classpath:/META-INF/resources/,classpath:/resources/,classpath:/static/
-#  security:
-#    oauth2:
-#      client:
-#        registration:
-#          google:
-#            client-id: 968922685559-4go5ovamlqkd2nj9atm6tupr1ht8tthq.apps.googleusercontent.com
-#            client-secret: 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
-#            scope:
-#              - email
-#              - profile
+  #  security:
+  #    oauth2:
+  #      client:
+  #        registration:
+  #          google:
+  #            client-id: 968922685559-4go5ovamlqkd2nj9atm6tupr1ht8tthq.apps.googleusercontent.com
+  #            client-secret: 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
+  #            scope:
+  #              - email
+  #              - profile
   mail:
     host: smtp.gmail.com
     port: 587
@@ -38,3 +38,7 @@ spring:
 
 server:
   endpoint: http://localhost:8080
+
+openweather:
+  api:
+    key: 380fd411d2353633955055e9007437d7
