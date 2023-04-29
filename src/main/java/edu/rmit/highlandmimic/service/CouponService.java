@@ -157,8 +157,9 @@ public class CouponService {
         Objects.requireNonNull(loadedUser);
 
         List<Coupon> allCoupons = this.getAllCoupons();
-        List<Coupon> usedCoupons = orderService.getOrdersOfUser(loadedUser.getUsername(), Order.OrderStatus.COMPLETED.toString())
+        List<Coupon> usedCoupons = orderService.getOrdersOfUser(loadedUser.getUsername(), "")
                 .stream()
+                .filter(order -> List.of(Order.OrderStatus.COMPLETED, Order.OrderStatus.PLACED).contains(order.getOrderStatus()))
                 .map(Order::getAppliedCoupon)
                 .toList();
 
