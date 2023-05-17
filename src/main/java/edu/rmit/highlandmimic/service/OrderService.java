@@ -151,6 +151,7 @@ public class OrderService {
         return Optional.of(loadedOrder).filter(assignmentPrecondition)
                 .map(loadedEntity -> {
                     loadedEntity.setOrderStatus(destinationStatus);
+                    loadedEntity.setLastUpdated(getCurrentDateTimeString());
                     return orderRepository.save(loadedEntity);
                 })
                 .orElseThrow(exceptionWhenCheckFailed);
