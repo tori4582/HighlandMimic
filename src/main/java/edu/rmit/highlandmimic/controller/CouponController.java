@@ -31,6 +31,11 @@ public class CouponController {
         return ResponseEntity.ok(couponService.getCouponById(id));
     }
 
+    @GetMapping("/available/{userId}")
+    public ResponseEntity<List<Coupon>> getAvailableCouponsForUser(@PathVariable String userId) {
+        return ResponseEntity.ok(couponService.getAvailableCouponsForUser(userId));
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<Coupon>> searchCouponsByName(@RequestParam String q) {
         return ResponseEntity.ok(couponService.searchCouponsByName(q));
@@ -39,7 +44,6 @@ public class CouponController {
     // WRITE operation
 
     @PostMapping
-
     public ResponseEntity<?> createNewCoupon(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationToken,
                                              @RequestBody CouponRequestEntity reqEntity) {
         return securityHandler.roleGuarantee(

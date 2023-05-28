@@ -127,7 +127,15 @@ public class OrderService {
     public Order attachCouponsOntoOrder(String id, String couponId) {
         return Optional.ofNullable(this.getOrderById(id))
                 .map(loadedEntity -> {
-                    loadedEntity.setAppliedCoupon(couponService.getCouponById(couponId));
+
+                    List<Coupon> availableCoupons = couponService.getAvailableCouponsForUser(loadedEntity.getUserId());
+                    Coupon applyingCoupon = couponService.getCouponById(couponId);
+
+                    if (!availableCoupons.contains(applyingCoupon)) {
+                        throw new IllegalArgumentException("This coupon has been already used by the user. Please try another coupon");
+                    }
+
+                    loadedEntity.setAppliedCoupon(applyingCoupon);
                     loadedEntity.setOrderAmount(calculateAmountOfOrder(loadedEntity));
                     return orderRepository.save(loadedEntity);
                 })
@@ -143,6 +151,7 @@ public class OrderService {
         return Optional.of(loadedOrder).filter(assignmentPrecondition)
                 .map(loadedEntity -> {
                     loadedEntity.setOrderStatus(destinationStatus);
+                    loadedEntity.setLastUpdated(getCurrentDateTimeString());
                     return orderRepository.save(loadedEntity);
                 })
                 .orElseThrow(exceptionWhenCheckFailed);

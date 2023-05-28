@@ -9,7 +9,6 @@ import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 import static edu.rmit.highlandmimic.common.ExceptionLogger.logInvalidAction;
-import static java.util.Optional.ofNullable;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ControllerUtils {
@@ -44,6 +43,6 @@ public class ControllerUtils {
     private static ResponseEntity<?> switchExceptionsResponse(Exception e) {
         return (exceptionalResponseMappings.containsKey(e.getClass()))
                 ? ((ResponseEntity.BodyBuilder) exceptionalResponseMappings.get(e.getClass())).body(e.getMessage())
-                : ResponseEntity.internalServerError().body(ExceptionLogger.ResponseException.fromExceptionObject(e));
+            : ResponseEntity.internalServerError().body(ExceptionLogger.ResponseException.fromExceptionObject(e));
     }
 }

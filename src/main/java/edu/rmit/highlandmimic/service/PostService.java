@@ -49,7 +49,7 @@ public class PostService {
 
     public Post updateExistingPost(String id, PostRequestEntity reqEntity) {
 
-        Post preparedPost = ofNullable(this.getPostById(id))
+        Post preparedPost = postRepository.findById(id)
                 .map(loadedEntity -> {
                     loadedEntity.setTitle(reqEntity.getTitle());
                     loadedEntity.setContent(reqEntity.getContent());

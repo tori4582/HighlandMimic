@@ -52,9 +52,6 @@ public class ProductCatalogueService {
                 .productCatalogueName(reqEntity.getName())
                 .description(reqEntity.getDescription())
                 .imageUrl(reqEntity.getImageUrl())
-//                .subCatalogues(
-//                        convertListOfIdsToCatalogues(this.getAllProductCatalogues(), reqEntity.getSubCatalogueIds())
-//                )
                 .associatedProductIds(reqEntity.getProductIds())
                 .build();
 
@@ -134,7 +131,6 @@ public class ProductCatalogueService {
         productCatalogueRepository.deleteAll();
         return quantity;
     }
-
 
 
 }
